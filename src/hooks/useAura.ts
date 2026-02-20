@@ -41,13 +41,22 @@ export const useAura = () => {
     }
 
     // 1. Fetch Missions
-    const { data: missionsData } = await supabase
-      .from('missions')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    setMissions(missionsData || [])
-    setMyMissions((missionsData || []).filter(m => m.user_id === user.id))
+    try {
+      const { data: missionsData, error: missionsError } = await supabase
+        .from('missions')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (missionsError) {
+        console.error('Missions Fetch Error:', missionsError)
+        setMissions([])
+      } else {
+        setMissions(missionsData || [])
+        setMyMissions((missionsData || []).filter(m => m.user_id === user.id))
+      }
+    } catch (e) {
+      console.error('Network Error fetching missions:', e)
+    }
 
     // 2. Fetch Profile
     const { data: profileData } = await supabase

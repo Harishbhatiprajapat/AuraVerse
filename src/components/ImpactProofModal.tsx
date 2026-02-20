@@ -1,17 +1,31 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Upload, ShieldCheck, MapPin, Camera, Sparkles, Loader2, CheckCircle } from 'lucide-react'
-import { useState, useRef } from 'react'
+import { X, Upload, ShieldCheck, MapPin, Camera, Sparkles, Loader2, CheckCircle, ChevronDown } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 import { useAura } from '../hooks/useAura'
 
-export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean, onClose: () => void, mission: any }) => {
+export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission }: { isOpen: boolean, onClose: () => void, mission: any }) => {
   const [step, setStep] = useState<'upload' | 'scanning' | 'success'>('upload')
-  const { verifyImpact, uploadEvidence } = useAura()
+  const { verifyImpact, uploadEvidence, missions } = useAura()
+  const [selectedMission, setSelectedMission] = useState<any>(initialMission)
   const [reward, setReward] = useState(0)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (initialMission) setSelectedMission(initialMission)
+  }, [initialMission])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !mission) return
+    if (!file || !selectedMission) {
+      if (!selectedMission) alert('Please select a mission first!')
+      return
+    }
+
+    // Show preview
+    const reader = new FileReader()
+    reader.onloadend = () => setPreviewUrl(reader.result as string)
+    reader.readAsDataURL(file)
 
     setStep('scanning')
 
@@ -20,15 +34,15 @@ export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean
       const { data: uploadData, error: uploadError } = await uploadEvidence(file)
       if (uploadError) throw uploadError
 
-      // 2. Verify with AI Engine (Edge Function)
-      const { data: verifyData, error: verifyError } = await verifyImpact(mission.id, uploadData.publicUrl)
+      // 2. Verify with AI Engine
+      const { data: verifyData, error: verifyError } = await verifyImpact(selectedMission.id, uploadData.publicUrl)
       if (verifyError) throw verifyError
 
       if (verifyData.status === 'verified') {
-        setReward(mission.reward_ap)
+        setReward(selectedMission.reward_ap)
         setStep('success')
       } else {
-        alert('AI Verification failed. Please try again.')
+        alert('AI Verification failed: ' + verifyData.message)
         setStep('upload')
       }
     } catch (err: any) {
@@ -38,6 +52,10 @@ export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean
   }
 
   const triggerFilePicker = () => {
+    if (!selectedMission) {
+      alert('Please select an active mission from the list first.')
+      return
+    }
     fileInputRef.current?.click()
   }
 
@@ -45,134 +63,107 @@ export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-brand-navy/95 backdrop-blur-3xl"
-          />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-brand-navy/95 backdrop-blur-3xl" />
+          
           <motion.div
             initial={{ scale: 0.8, y: 50, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.8, y: 50, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-4xl glass-million p-12 md:p-16 border-brand-blue/30 overflow-hidden shadow-[0_0_100px_rgba(0,210,255,0.2)]"
+            className="relative w-full max-w-5xl glass-million p-8 md:p-16 border-brand-blue/30 overflow-hidden shadow-2xl"
           >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              className="hidden" 
-              accept="image/*"
-            />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
-            {step === 'scanning' && (
-              <motion.div 
-                initial={{ top: '0%' }}
-                animate={{ top: '100%' }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                className="absolute left-0 right-0 h-[2px] bg-brand-blue/60 z-10 shadow-[0_0_20px_rgba(0,210,255,1)]"
-              />
-            )}
-
-            <button 
-              onClick={() => { onClose(); setStep('upload'); }}
-              className="absolute top-10 right-10 p-3 glass-million hover:bg-white/10 transition-all z-20"
-            >
-              <X className="w-8 h-8" />
+            <button onClick={() => { onClose(); setStep('upload'); setPreviewUrl(null); }} className="absolute top-8 right-8 p-3 glass-million hover:bg-white/10 z-20">
+              <X className="w-6 h-6" />
             </button>
 
             <AnimatePresence mode="wait">
               {step === 'upload' && (
-                <motion.div 
-                  key="upload"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-12"
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                    <div className="w-16 h-16 bg-brand-blue/20 rounded-2xl flex items-center justify-center border border-brand-blue/30 shadow-lg shrink-0">
+                <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-brand-blue/20 rounded-2xl flex items-center justify-center border border-brand-blue/30 shadow-lg">
                       <ShieldCheck className="w-9 h-9 text-brand-blue" />
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter truncate">Impact Proof Ledger</h2>
-                      <p className="text-brand-blue font-black uppercase tracking-[0.4em] text-[10px] mt-1">Immutable Verification Node v4.0</p>
+                    <div>
+                      <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Impact Proof</h2>
+                      <p className="text-brand-blue font-black uppercase tracking-[0.4em] text-[10px]">Secure Verification Node v4.0</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 overflow-y-auto max-h-[60vh] md:max-h-none pr-2">
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">1. Verification Source</label>
-                      <div className="grid grid-cols-2 gap-4">
-                        <SourceButton icon={<Camera className="w-6 h-6" />} label="Visual" active />
-                        <SourceButton icon={<MapPin className="w-6 h-6" />} label="Geo-Sync" />
-                      </div>
-                      <div className="p-8 glass-million bg-white/5 border-white/5 space-y-4">
-                         <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">Active Mission</div>
-                         <div className="text-xl font-black italic uppercase tracking-tight text-brand-blue truncate">
-                           {mission?.title || 'No Mission Selected'}
-                         </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">1. Select Active Mission</label>
+                        <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                          {missions.length > 0 ? missions.map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => setSelectedMission(m)}
+                              className={`p-5 rounded-2xl border text-left transition-all ${selectedMission?.id === m.id ? 'bg-brand-blue/20 border-brand-blue shadow-[0_0_20px_rgba(0,210,255,0.2)]' : 'bg-white/5 border-white/10 hover:border-white/30'}`}
+                            >
+                              <div className="font-black italic uppercase tracking-tight text-sm mb-1">{m.title}</div>
+                              <div className="text-[10px] font-bold text-brand-blue uppercase">{m.reward_ap} AP Reward</div>
+                            </button>
+                          )) : (
+                            <div className="p-8 text-center glass-million text-white/20 uppercase tracking-widest text-xs">No Missions Available</div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">2. Authenticate Evidence</label>
+                    <div className="space-y-8">
+                      <label className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">2. Submit Evidence</label>
                       <div 
                         onClick={triggerFilePicker}
-                        className="border-2 border-dashed border-white/10 rounded-[2rem] p-16 text-center hover:border-brand-blue/50 hover:bg-brand-blue/5 transition-all cursor-pointer group"
+                        className={`relative border-2 border-dashed rounded-[2.5rem] p-16 text-center transition-all cursor-pointer group ${selectedMission ? 'border-brand-blue/40 hover:bg-brand-blue/5' : 'border-white/5 opacity-50 cursor-not-allowed'}`}
                       >
-                        <Upload className="w-16 h-16 mx-auto mb-6 text-white/10 group-hover:text-brand-blue group-hover:scale-110 transition-all" />
-                        <p className="text-xl font-black italic uppercase tracking-tight text-white/40 group-hover:text-white">Initialize Upload</p>
-                        <p className="text-[10px] text-white/10 mt-3 font-black uppercase tracking-[0.3em]">AI-Ready Nodes Connected</p>
+                        {previewUrl ? (
+                          <div className="absolute inset-4 rounded-[2rem] overflow-hidden">
+                            <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
+                            <div className="absolute inset-0 bg-brand-navy/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                               <p className="font-black italic uppercase text-xs">Change Photo</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-16 h-16 mx-auto mb-6 text-white/10 group-hover:text-brand-blue group-hover:scale-110 transition-all" />
+                            <p className="text-xl font-black italic uppercase tracking-tight text-white/40 group-hover:text-white">Initialize Upload</p>
+                            <p className="text-[10px] text-white/10 mt-3 font-black uppercase tracking-[0.3em]">AI-Ready Nodes Connected</p>
+                          </>
+                        )}
                       </div>
+                      
+                      {!selectedMission && (
+                        <p className="text-center text-xs font-bold text-brand-blue animate-pulse uppercase tracking-widest">← Please select a mission to unlock upload</p>
+                      )}
                     </div>
                   </div>
                 </motion.div>
               )}
 
               {step === 'scanning' && (
-                <motion.div 
-                  key="scanning"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-[400px] flex flex-col items-center justify-center text-center space-y-8"
-                >
-                  <div className="relative">
+                <motion.div key="scanning" className="h-[500px] flex flex-col items-center justify-center text-center space-y-8">
+                   <div className="relative">
                     <Loader2 className="w-32 h-32 text-brand-blue animate-spin opacity-20" />
                     <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-brand-blue animate-pulse" />
                   </div>
                   <h3 className="text-4xl font-black italic uppercase tracking-tighter animate-pulse text-brand-blue">AI Analyzing Evidence...</h3>
-                  <p className="text-white/40 font-black uppercase tracking-[0.5em] text-xs">Matching metadata with impact ledger</p>
+                  <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} className="w-1/2 h-full bg-brand-blue shadow-[0_0_15px_rgba(0,210,255,1)]" />
+                  </div>
                 </motion.div>
               )}
 
               {step === 'success' && (
-                <motion.div 
-                  key="success"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="h-[400px] flex flex-col items-center justify-center text-center space-y-8"
-                >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', damping: 10, stiffness: 100 }}
-                  >
+                <motion.div key="success" className="h-[500px] flex flex-col items-center justify-center text-center space-y-8">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 10, stiffness: 100 }}>
                     <CheckCircle className="w-32 h-32 text-brand-cyan shadow-[0_0_50px_rgba(0,255,255,0.4)]" />
                   </motion.div>
                   <h3 className="text-5xl font-black italic uppercase tracking-tighter text-brand-cyan">Impact Verified!</h3>
                   <div className="px-10 py-4 glass-million border-brand-cyan/20 bg-brand-cyan/5">
                     <span className="text-2xl font-black text-white italic">+{reward.toLocaleString()} <span className="text-brand-cyan">Aura Points</span> Awarded</span>
                   </div>
-                  <button 
-                    onClick={() => { onClose(); setStep('upload'); }}
-                    className="px-12 py-5 bg-brand-cyan text-brand-navy font-black text-xl rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,210,255,0.4)] uppercase italic"
-                  >
-                    Return to Mission Hub
-                  </button>
+                  <button onClick={() => { onClose(); setStep('upload'); setPreviewUrl(null); }} className="px-12 py-5 bg-brand-cyan text-brand-navy font-black text-xl rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,255,255,0.4)] uppercase italic">Return to Mission Hub</button>
                 </motion.div>
               )}
             </AnimatePresence>
