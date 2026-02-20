@@ -75,11 +75,20 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const verifyImpact = async (missionId: string, evidenceUrl: string) => {
+    if (isDemo) return { data: { status: 'verified', message: 'Demo Mode Impact Verified', reward: 1000 } }
+    
     const { data: { user } } = await supabase.auth.getUser()
-    // Directly call edge function
-    return supabase.functions.invoke('verify-impact', {
-      body: { user_id: user?.id || 'demo-user', mission_id: missionId, evidence_url: evidenceUrl },
-    })
+    if (!user) return { error: 'Auth required' }
+    
+    try {
+      const response = await supabase.functions.invoke('verify-impact', {
+        body: { user_id: user.id, mission_id: missionId, evidence_url: evidenceUrl },
+      })
+      return response
+    } catch (e: any) {
+      console.error('Edge Function Fatal:', e)
+      return { error: 'Network error communicating with AI engine' }
+    }
   }
 
   const createMission = async (missionData: any) => {
