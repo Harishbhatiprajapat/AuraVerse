@@ -46,14 +46,19 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) { setLoading(false); return; }
 
     try {
-      // 2. Fetch Missions (Simplified query to avoid join errors)
+      // 2. Fetch Missions with Host Attribution
       const { data: mData } = await supabase
         .from('missions')
-        .select('*')
+        .select('*, profiles:user_id (username)')
         .order('created_at', { ascending: false })
       
-      setMissions(mData || [])
-      setMyMissions((mData || []).filter(m => m.user_id === user.id))
+      const formatted = (mData || []).map(m => ({
+        ...m,
+        username: (m.profiles as any)?.username || 'Guardian'
+      }))
+
+      setMissions(formatted)
+      setMyMissions(formatted.filter(m => m.user_id === user.id))
 
       // 3. Fetch My Profile
       const { data: pData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -75,10 +80,9 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const verifyImpact = async (missionId: string, evidenceUrl: string) => {
-    console.log('⚡ AURA-BYPASS: Initializing instant verification...')
     const { data: { user } } = await supabase.auth.getUser()
     
-    // 1. Find mission reward
+    // Find mission reward
     const mission = missions.find(m => m.id === missionId)
     const rewardAmount = mission?.reward_ap || 1000
 
@@ -91,40 +95,27 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return { error: 'Auth required' }
 
     try {
-      // 2. Insert into Proof Ledger
-      await supabase.from('proof_ledger').insert([{
-        user_id: user.id,
-        mission_id: missionId,
-        evidence_url: evidenceUrl,
-        status: 'verified',
-        verified_at: new Date().toISOString()
-      }])
-
-      // 3. Increment Profile Points Directly (BYPASS)
-      const { data: currentProfile } = await supabase.from('profiles').select('aura_points, level').eq('id', user.id).single()
-      const newPoints = (currentProfile?.aura_points || 0) + rewardAmount
+      // Direct Bypass Point Increment
+      const newPoints = (profile?.aura_points || 0) + rewardAmount
       const newLevel = Math.floor(newPoints / 1000) + 1
 
-      const { data: updated, error: uError } = await supabase
-        .from('profiles')
-        .update({ aura_points: newPoints, level: newLevel })
-        .eq('id', user.id)
-        .select()
-
-      if (uError) throw uError
-
-      console.log('✅ AURA-BYPASS: Points incremented! New Total:', newPoints)
-      await fetchData() // Sync everything
+      await supabase.from('profiles').update({ aura_points: newPoints, level: newLevel }).eq('id', user.id)
+      await supabase.from('proof_ledger').insert([{ user_id: user.id, mission_id: missionId, evidence_url: evidenceUrl, status: 'verified' }])
       
+      await fetchData()
       return { data: { status: 'verified', reward: rewardAmount } }
     } catch (e: any) {
-      console.error('❌ AURA-BYPASS Error:', e)
       return { error: e.message }
     }
   }
 
   const createMission = async (missionData: any) => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (isDemo) {
+      const nm = { ...missionData, id: Math.random().toString(), user_id: 'demo', created_at: new Date().toISOString(), username: 'DemoLegend' }
+      setMissions(prev => [nm, ...prev])
+      return { data: nm }
+    }
     const res = await supabase.from('missions').insert([{ ...missionData, user_id: user?.id }]).select()
     if (!res.error) await fetchData()
     return res
@@ -132,6 +123,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updates: any) => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (isDemo) { setProfile({ ...profile, ...updates }); return { data: updates } }
     const res = await supabase.from('profiles').update(updates).eq('id', user?.id).select()
     if (!res.error) setProfile(res.data[0])
     return res
@@ -155,6 +147,6 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAura = () => {
   const context = useContext(AuraContext)
-  if (context === undefined) throw new Error('useAura must be used within AuraProvider')
+  if (context === undefined) throw new Error('useAura context error')
   return context
 }
