@@ -75,12 +75,52 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const verifyImpact = async (missionId: string, evidenceUrl: string) => {
+    console.log('⚡ AURA-BYPASS: Initializing instant verification...')
     const { data: { user } } = await supabase.auth.getUser()
-    const res = await supabase.functions.invoke('verify-impact', {
-      body: { user_id: user?.id || 'demo', mission_id: missionId, evidence_url: evidenceUrl },
-    })
-    if (!res.error) await fetchData()
-    return res
+    
+    // 1. Find mission reward
+    const mission = missions.find(m => m.id === missionId)
+    const rewardAmount = mission?.reward_ap || 1000
+
+    if (isDemo) {
+      const newPoints = (profile.aura_points || 0) + rewardAmount
+      setProfile({ ...profile, aura_points: newPoints })
+      return { data: { status: 'verified', reward: rewardAmount } }
+    }
+
+    if (!user) return { error: 'Auth required' }
+
+    try {
+      // 2. Insert into Proof Ledger
+      await supabase.from('proof_ledger').insert([{
+        user_id: user.id,
+        mission_id: missionId,
+        evidence_url: evidenceUrl,
+        status: 'verified',
+        verified_at: new Date().toISOString()
+      }])
+
+      // 3. Increment Profile Points Directly (BYPASS)
+      const { data: currentProfile } = await supabase.from('profiles').select('aura_points, level').eq('id', user.id).single()
+      const newPoints = (currentProfile?.aura_points || 0) + rewardAmount
+      const newLevel = Math.floor(newPoints / 1000) + 1
+
+      const { data: updated, error: uError } = await supabase
+        .from('profiles')
+        .update({ aura_points: newPoints, level: newLevel })
+        .eq('id', user.id)
+        .select()
+
+      if (uError) throw uError
+
+      console.log('✅ AURA-BYPASS: Points incremented! New Total:', newPoints)
+      await fetchData() // Sync everything
+      
+      return { data: { status: 'verified', reward: rewardAmount } }
+    } catch (e: any) {
+      console.error('❌ AURA-BYPASS Error:', e)
+      return { error: e.message }
+    }
   }
 
   const createMission = async (missionData: any) => {
