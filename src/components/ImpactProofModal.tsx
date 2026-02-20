@@ -13,7 +13,6 @@ export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean
     const file = e.target.files?.[0]
     if (!file || !mission) return
 
-    setIsUploading(true)
     setStep('scanning')
 
     try {
@@ -35,8 +34,6 @@ export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean
     } catch (err: any) {
       alert('Error: ' + (err.message || 'Could not complete verification'))
       setStep('upload')
-    } finally {
-      setIsUploading(false)
     }
   }
 
