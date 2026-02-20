@@ -10,6 +10,8 @@ import { ImpactProofModal } from './components/ImpactProofModal'
 import { HostMissionModal } from './components/HostMissionModal'
 import { CollaborationRoom } from './components/CollaborationRoom'
 import { Auth } from './components/Auth'
+import { APBurst } from './components/APBurst'
+import { BackgroundAura } from './components/BackgroundAura'
 import type { Session } from '@supabase/supabase-js'
 import './App.css'
 
@@ -19,16 +21,15 @@ function App() {
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
   const [isHostModalOpen, setIsHostModalOpen] = useState(false)
   const [selectedMission, setSelectedMission] = useState<any>(null)
+  const [celebration, setCelebration] = useState({ isVisible: false, amount: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Initial Auth State
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
 
-    // Listen for Auth Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
@@ -38,11 +39,10 @@ function App() {
 
   const handleDemoLogin = () => {
     localStorage.setItem('aura_demo_mode', 'true')
-    const mockSession = { 
-      access_token: 'demo-token', 
+    setSession({ 
+      access_token: 'demo', 
       user: { id: 'demo-user', email: 'demo@auraverse.co' } 
-    } as any
-    setSession(mockSession)
+    } as any)
   }
 
   const handleParticipate = (mission: any) => {
@@ -50,73 +50,13 @@ function App() {
     setIsProofModalOpen(true)
   }
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'home':
-        return (
-          <motion.div
-            key="home"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <Hero onActionClick={() => setIsProofModalOpen(true)} />
-            <ProfilePreview />
-          </motion.div>
-        )
-      case 'dashboard':
-        return (
-          <motion.div
-            key="dashboard"
-            initial={{ opacity: 0, x: 50, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, x: -50, filter: 'blur(10px)' }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="pt-32"
-          >
-            <Dashboard 
-              onHostMission={() => setIsHostModalOpen(true)} 
-              onParticipate={handleParticipate}
-            />
-          </motion.div>
-        )
-      case 'missions':
-        return (
-          <motion.div
-            key="missions"
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -100 }}
-            transition={{ duration: 0.6, ease: 'backOut' }}
-            className="pt-32"
-          >
-             <Dashboard 
-               onHostMission={() => setIsHostModalOpen(true)} 
-               onParticipate={handleParticipate}
-               defaultTab="Events" 
-             />
-          </motion.div>
-        )
-      case 'community':
-        return (
-          <motion.div
-            key="community"
-            initial={{ opacity: 0, rotateX: -10 }}
-            animate={{ opacity: 1, rotateX: 0 }}
-            exit={{ opacity: 0, rotateX: 10 }}
-            transition={{ duration: 0.6 }}
-            className="pt-32"
-          >
-            <CollaborationRoom />
-          </motion.div>
-        )
-    }
+  const handleVerificationSuccess = (amount: number) => {
+    setCelebration({ isVisible: true, amount })
   }
 
   if (loading) return (
     <div className="min-h-screen bg-[#020208] flex items-center justify-center">
-       <div className="w-16 h-16 border-4 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+       <div className="w-16 h-16 border-4 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin shadow-[0_0_20px_rgba(0,210,255,0.3)]" />
     </div>
   )
 
@@ -125,41 +65,60 @@ function App() {
   }
 
   return (
-    <main className="relative min-h-screen pb-40">
+    <main className="relative min-h-screen pb-40 selection:bg-brand-blue/30">
+      <BackgroundAura />
       <Navbar 
-        onActionClick={() => setIsProofModalOpen(true)} 
+        onActionClick={() => { setSelectedMission(null); setIsProofModalOpen(true); }} 
         currentView={currentView}
         setView={setCurrentView}
       />
       
       <AnimatePresence mode="wait">
-        {renderView()}
+        <motion.div
+          key={currentView}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {currentView === 'home' && (
+            <>
+              <Hero onActionClick={() => setCurrentView('missions')} />
+              <ProfilePreview />
+            </>
+          )}
+          
+          {(currentView === 'dashboard' || currentView === 'missions') && (
+            <div className="pt-32">
+              <Dashboard 
+                onHostMission={() => setIsHostModalOpen(true)} 
+                onParticipate={handleParticipate}
+                defaultTab={currentView === 'missions' ? 'Events' : 'Overview'}
+              />
+            </div>
+          )}
+
+          {currentView === 'community' && (
+            <div className="pt-32">
+              <CollaborationRoom />
+            </div>
+          )}
+        </motion.div>
       </AnimatePresence>
       
       <ImpactProofModal 
         isOpen={isProofModalOpen} 
         onClose={() => setIsProofModalOpen(false)} 
         mission={selectedMission}
+        onSuccess={handleVerificationSuccess}
       />
       <HostMissionModal isOpen={isHostModalOpen} onClose={() => setIsHostModalOpen(false)} />
 
-      {/* Background Particles Layer */}
-      <div className="fixed inset-0 pointer-events-none opacity-20 overflow-hidden z-[-1]">
-        {Array.from({ length: 40 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-brand-blue rounded-full blur-[2px] animate-float"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: `${Math.random() * 4 + 1}px`,
-              height: `${Math.random() * 4 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 5 + 5}s`
-            }}
-          />
-        ))}
-      </div>
+      <APBurst 
+        amount={celebration.amount} 
+        isVisible={celebration.isVisible} 
+        onComplete={() => setCelebration({ ...celebration, isVisible: false })} 
+      />
     </main>
   )
 }

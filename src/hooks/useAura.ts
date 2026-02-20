@@ -13,29 +13,31 @@ export const useAura = () => {
     
     const { data: { user } } = await supabase.auth.getUser()
     
+    // Check for demo mode first
+    const isDemoSession = localStorage.getItem('aura_demo_mode') === 'true'
+    if (isDemoSession && !user) {
+      setIsDemo(true)
+      setProfile({
+        id: 'demo-user',
+        username: 'DemoLegend',
+        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo',
+        aura_points: 25000,
+        level: 50,
+        reputation_score: 99.9,
+        impact_type: 'Legendary',
+        bio: 'The ultimate aura guardian.'
+      })
+      const mockMissions = [
+        { id: '1', title: 'Global Reforestation', reward_ap: 5000, mission_type: 'Environmental', description: 'Sample mission for demo.', user_id: 'demo-user', created_at: new Date().toISOString() },
+        { id: '2', title: 'Civic Hackathon', reward_ap: 3000, mission_type: 'Civic', description: 'Sample mission for demo.', user_id: 'other-user', created_at: new Date().toISOString() }
+      ]
+      setMissions(mockMissions)
+      setMyMissions(mockMissions.filter(m => m.user_id === 'demo-user'))
+      setLoading(false)
+      return
+    }
+
     if (!user) {
-      // Check if we are in a mock demo session (set by App.tsx)
-      const isDemoSession = localStorage.getItem('aura_demo_mode') === 'true'
-      if (isDemoSession) {
-        setIsDemo(true)
-        setProfile({
-          id: 'demo-user',
-          username: 'DemoLegend',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo',
-          aura_points: 25000,
-          level: 50,
-          reputation_score: 99.9,
-          impact_type: 'Legendary'
-        })
-        const mockMissions = [
-          { id: '1', title: 'Global Reforestation', reward_ap: 5000, mission_type: 'Environmental', description: 'Sample mission for demo.', user_id: 'demo-user' },
-          { id: '2', title: 'Civic Hackathon', reward_ap: 3000, mission_type: 'Civic', description: 'Sample mission for demo.', user_id: 'other-user' }
-        ]
-        setMissions(mockMissions)
-        setMyMissions(mockMissions.filter(m => m.user_id === 'demo-user'))
-        setLoading(false)
-        return
-      }
       setLoading(false)
       return
     }
@@ -44,28 +46,39 @@ export const useAura = () => {
     try {
       const { data: missionsData, error: missionsError } = await supabase
         .from('missions')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (username)
+        `)
         .order('created_at', { ascending: false })
       
-      if (missionsError) {
-        console.error('Missions Fetch Error:', missionsError)
-        setMissions([])
-      } else {
-        setMissions(missionsData || [])
-        setMyMissions((missionsData || []).filter(m => m.user_id === user.id))
-      }
+      if (missionsError) throw missionsError
+      
+      const formattedMissions = (missionsData || []).map(m => ({
+        ...m,
+        username: m.profiles?.username || 'Guardian'
+      }))
+
+      setMissions(formattedMissions)
+      setMyMissions(formattedMissions.filter(m => m.user_id === user.id))
     } catch (e) {
-      console.error('Network Error fetching missions:', e)
+      console.error('Missions Fetch Error:', e)
     }
 
     // 2. Fetch Profile
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      
+      if (profileError) throw profileError
+      setProfile(profileData)
+    } catch (e) {
+      console.error('Profile Fetch Error:', e)
+    }
     
-    setProfile(profileData)
     setLoading(false)
   }
 

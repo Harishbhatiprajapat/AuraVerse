@@ -25,10 +25,10 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
           Dashboard <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent opacity-50 text-2xl md:text-4xl block md:inline">/ {activeTab}</span>
         </h2>
         
-        <div className="flex items-center gap-2 md:gap-4 bg-white/5 p-2 rounded-2xl border border-white/5 backdrop-blur-xl">
-          <TabButton active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} icon={<List className="w-5 h-5" />} />
-          <TabButton active={activeTab === 'Events'} onClick={() => setActiveTab('Events')} icon={<Calendar className="w-5 h-5" />} />
-          <TabButton active={activeTab === 'Global'} onClick={() => setActiveTab('Global')} icon={<Map className="w-5 h-5" />} />
+        <div className="flex items-center gap-2 md:gap-4 bg-white/5 p-2 rounded-2xl border border-white/5 backdrop-blur-xl relative">
+          <TabButton active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} icon={<List className="w-5 h-5" />} label="Overview" />
+          <TabButton active={activeTab === 'Events'} onClick={() => setActiveTab('Events')} icon={<Calendar className="w-5 h-5" />} label="Events" />
+          <TabButton active={activeTab === 'Global'} onClick={() => setActiveTab('Global')} icon={<Map className="w-5 h-5" />} label="Impact" />
         </div>
       </div>
 
@@ -82,7 +82,13 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                   <LeaderboardItem rank={2} name="EcoWarrior" points="128k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Eco" />
                   <LeaderboardItem rank={3} name="CyberImpact" points="98k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Impact" />
                   <div className="pt-4 border-t border-white/10 mt-4">
-                    <LeaderboardItem rank={142} name={profile?.username || 'You'} points={profile?.aura_points?.toLocaleString() || '0'} avatar={profile?.avatar_url} active />
+                    <LeaderboardItem 
+                      rank={142} 
+                      name={profile?.username || 'You'} 
+                      points={profile?.aura_points?.toLocaleString() || '0'} 
+                      avatar={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || 'Haris'}`} 
+                      active 
+                    />
                   </div>
                 </div>
               </div>
@@ -98,21 +104,43 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
             exit={{ opacity: 0, y: -20 }}
             className="space-y-12"
           >
-            <div className="glass-card p-12 text-center border-brand-purple/20 bg-brand-purple/5">
-              <h3 className="text-4xl font-black mb-4 italic uppercase tracking-tighter">Community Event Hub</h3>
-              <p className="text-xl text-white/50 mb-8 max-w-2xl mx-auto">Host your own missions and build your community's Aura. Impact starts with you.</p>
-              <button 
-                onClick={onHostMission}
-                className="px-10 py-5 bg-brand-purple text-white font-black rounded-2xl flex items-center gap-3 text-lg mx-auto shadow-[0_0_30px_rgba(146,0,255,0.4)] hover:scale-105 transition-all uppercase tracking-widest italic"
-              >
-                <Plus className="w-6 h-6" /> Host a Mission
-              </button>
+            <div className="glass-card p-12 text-center border-brand-purple/20 bg-brand-purple/5 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-purple/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <h3 className="text-4xl font-black mb-4 italic uppercase tracking-tighter relative z-10">Community Event Hub</h3>
+              <p className="text-xl text-white/50 mb-8 max-w-2xl mx-auto relative z-10">Host your own missions and build your community's Aura. Impact starts with you.</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
+                <button 
+                  onClick={onHostMission}
+                  className="px-10 py-5 bg-brand-purple text-white font-black rounded-2xl flex items-center gap-3 text-lg shadow-[0_0_30px_rgba(146,0,255,0.4)] hover:scale-105 transition-all uppercase tracking-widest italic"
+                >
+                  <Plus className="w-6 h-6" /> Host a Mission
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <EventCard title="Earth Day Sprint" host="EcoTeam" date="22 Feb" ap="5k AP" image="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=250&fit=crop" />
-              <EventCard title="Hack for Peace" host="AuraHub" date="25 Feb" ap="10k AP" image="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=250&fit=crop" />
-              <EventCard title="Clean City Run" host="CityGuard" date="28 Feb" ap="3k AP" image="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=250&fit=crop" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {missions && missions.length > 0 ? missions.map((m) => (
+                <EventCard 
+                  key={m.id}
+                  title={m.title} 
+                  host={m.username || 'Guardian'} 
+                  date={new Date(m.created_at).toLocaleDateString()} 
+                  ap={`${m.reward_ap} AP`} 
+                  image={m.image_url || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=250&fit=crop"}
+                  onClick={() => onParticipate(m)}
+                />
+              )) : (
+                <div className="col-span-full py-32 text-center glass-million border-white/5 flex flex-col items-center justify-center gap-6">
+                   <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/10 animate-pulse">
+                      <Calendar className="w-10 h-10 text-white/20" />
+                   </div>
+                   <div>
+                     <p className="text-2xl font-black italic uppercase tracking-widest text-white/60">No active missions found in the Verse.</p>
+                     <p className="text-sm mt-2 font-medium text-white/30">The community is waiting for your initiative.</p>
+                   </div>
+                   <button onClick={onHostMission} className="text-brand-purple font-black uppercase tracking-widest text-xs border-b border-brand-purple/30 pb-1 hover:text-white transition-colors">Launch First Mission →</button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -160,68 +188,93 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
   )
 }
 
-const TabButton = ({ active, onClick, icon }: { active: boolean, onClick: () => void, icon: React.ReactNode }) => (
+const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
   <button 
     onClick={onClick}
-    className={`p-4 rounded-xl transition-all ${active ? 'bg-brand-blue/20 text-brand-blue border border-brand-blue/30 shadow-[0_0_20px_rgba(0,210,255,0.2)]' : 'text-white/40 hover:text-white/80'}`}
+    className={`relative px-6 py-4 rounded-xl flex items-center gap-3 transition-all ${active ? 'text-brand-blue' : 'text-white/30 hover:text-white/60'}`}
   >
-    {icon}
+    {active && (
+      <motion.div 
+        layoutId="dash-tab-bg"
+        className="absolute inset-0 bg-brand-blue/10 border border-brand-blue/20 rounded-xl shadow-[0_0_20px_rgba(0,210,255,0.1)]"
+      />
+    )}
+    <div className="relative z-10">{icon}</div>
+    <span className="relative z-10 text-[10px] font-black uppercase tracking-[0.2em] italic">{label}</span>
   </button>
 )
 
 const StatCard = ({ icon, label, value, sub }: { icon: React.ReactNode, label: string, value: string, sub: string }) => (
   <motion.div
-    whileHover={{ y: -5, boxShadow: '0 0 20px rgba(0, 210, 255, 0.2)' }}
-    className="glass-card p-6 flex flex-col items-center text-center group"
+    whileHover={{ y: -8, transition: { duration: 0.2 } }}
+    className="glass-million p-8 flex flex-col items-center text-center group relative overflow-hidden"
   >
-    <div className="mb-4 transform transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(0,210,255,0.6)]">
+    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="mb-6 transform transition-all duration-500 group-hover:scale-125 group-hover:drop-shadow-[0_0_15px_rgba(0,210,255,0.6)]">
       {icon}
     </div>
-    <span className="text-white/40 uppercase tracking-widest text-[10px] font-bold mb-1">{label}</span>
-    <div className="text-3xl font-black mb-1 italic uppercase tracking-tighter">{value}</div>
-    <span className="text-white/60 text-xs font-semibold">{sub}</span>
+    <span className="text-white/20 uppercase tracking-[0.3em] text-[10px] font-black mb-2">{label}</span>
+    <div className="text-4xl font-black mb-1 italic tracking-tighter text-glow-blue">{value}</div>
+    <span className="text-white/40 text-xs font-bold uppercase tracking-widest">{sub}</span>
   </motion.div>
 )
 
 const MissionCard = ({ title, desc, reward, type, tagColor, onClick }: { title: string, desc: string, reward: string, type: string, tagColor: string, onClick?: () => void }) => (
   <motion.div
-    whileHover={{ x: 5, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-    className="glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 group cursor-pointer"
+    initial={{ opacity: 0, x: -20 }}
+    whileInView={{ opacity: 1, x: 0 }}
+    whileHover={{ x: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+    viewport={{ once: true }}
+    className="glass-million p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 group cursor-pointer border-white/5 relative overflow-hidden"
   >
-    <div className="flex-1 min-w-0">
-      <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border mb-3 ${tagColor}`}>
+    <div className="flex-1 min-w-0 z-10">
+      <div className={`inline-block px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border mb-4 ${tagColor} backdrop-blur-3xl`}>
         {type}
       </div>
-      <h3 className="text-xl font-bold mb-2 group-hover:text-brand-blue transition-colors italic uppercase tracking-tight truncate">{title}</h3>
-      <p className="text-white/50 text-sm line-clamp-2 sm:line-clamp-1">{desc}</p>
+      <h3 className="text-2xl font-black mb-2 group-hover:text-brand-blue transition-colors italic uppercase tracking-tight truncate">{title}</h3>
+      <p className="text-white/30 text-base font-medium line-clamp-2 sm:line-clamp-1 group-hover:text-white/60 transition-colors">{desc}</p>
     </div>
-    <div className="flex flex-col sm:items-end gap-4 shrink-0">
+    <div className="flex flex-col sm:items-end gap-6 shrink-0 z-10">
       <div className="text-left sm:text-right">
-        <div className="text-brand-blue font-black text-xl mb-1">{reward}</div>
-        <div className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Potential Gain</div>
+        <div className="text-3xl font-black text-brand-blue italic tracking-tighter mb-1 text-glow-blue">{reward}</div>
+        <div className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em]">Potential Aura</div>
       </div>
-      <button 
+      <motion.button 
+        whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(0, 210, 255, 0.4)' }}
+        whileTap={{ scale: 0.95 }}
         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-        className="px-6 py-2 bg-brand-blue/10 border border-brand-blue/30 text-brand-blue rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-brand-navy transition-all"
+        className="px-8 py-3 bg-brand-blue text-brand-navy rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] italic transition-all"
       >
-        Complete Mission
-      </button>
+        Initialize
+      </motion.button>
     </div>
   </motion.div>
 )
 
 const LeaderboardItem = ({ rank, name, points, avatar, active = false }: { rank: number, name: string, points: string, avatar: string, active?: boolean }) => (
-  <div className={`flex items-center gap-4 ${active ? 'bg-brand-blue/10 p-2 rounded-xl -mx-2 border border-brand-blue/20 shadow-[0_0_15px_rgba(0,210,255,0.1)]' : ''}`}>
-    <span className={`w-6 font-black text-lg ${rank <= 3 ? 'text-brand-blue' : 'text-white/20'}`}>{rank}</span>
-    <img src={avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Haris"} alt={name} className="w-10 h-10 rounded-full bg-white/5" />
-    <span className={`flex-1 font-bold ${active ? 'text-white' : 'text-white/70'}`}>{name}</span>
-    <span className="font-black text-brand-blue italic uppercase tracking-tighter">{points}</span>
-  </div>
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    whileHover={{ x: 5 }}
+    className={`flex items-center gap-4 p-3 rounded-2xl transition-all ${active ? 'bg-brand-blue/10 border border-brand-blue/30 shadow-[0_0_20px_rgba(0,210,255,0.1)]' : 'hover:bg-white/5'}`}
+  >
+    <span className={`w-8 font-black italic text-xl ${rank <= 3 ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(0,210,255,0.5)]' : 'text-white/20'}`}>{rank}</span>
+    <div className="relative">
+      <img src={avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Haris"} alt={name} className="w-12 h-12 rounded-full bg-white/5 border border-white/10" />
+      {active && <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-blue rounded-full border-4 border-brand-navy flex items-center justify-center animate-pulse" />}
+    </div>
+    <span className={`flex-1 font-black italic uppercase tracking-tight ${active ? 'text-white' : 'text-white/60'}`}>{name}</span>
+    <div className="text-right">
+      <span className="font-black text-brand-blue italic uppercase tracking-tighter text-lg">{points}</span>
+      <div className="text-[8px] font-black uppercase text-white/20 tracking-widest leading-none">AP Aura</div>
+    </div>
+  </motion.div>
 )
 
-const EventCard = ({ title, host, date, ap, image }: { title: string, host: string, date: string, ap: string, image: string }) => (
+const EventCard = ({ title, host, date, ap, image, onClick }: { title: string, host: string, date: string, ap: string, image: string, onClick?: () => void }) => (
   <motion.div
     whileHover={{ y: -5 }}
+    onClick={onClick}
     className="glass-card overflow-hidden group cursor-pointer border-white/5"
   >
     <div className="h-40 overflow-hidden relative">

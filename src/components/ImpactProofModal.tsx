@@ -3,9 +3,9 @@ import { X, Upload, ShieldCheck, Sparkles, Loader2, CheckCircle } from 'lucide-r
 import { useState, useRef, useEffect } from 'react'
 import { useAura } from '../hooks/useAura'
 
-export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission }: { isOpen: boolean, onClose: () => void, mission: any }) => {
+export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission, onSuccess }: { isOpen: boolean, onClose: () => void, mission: any, onSuccess: (amount: number) => void }) => {
   const [step, setStep] = useState<'upload' | 'scanning' | 'success'>('upload')
-  const { verifyImpact, uploadEvidence, missions } = useAura()
+  const { verifyImpact, uploadEvidence, missions, refresh } = useAura()
   const [selectedMission, setSelectedMission] = useState<any>(initialMission)
   const [reward, setReward] = useState(0)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -13,7 +13,8 @@ export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission }: {
 
   useEffect(() => {
     if (initialMission) setSelectedMission(initialMission)
-  }, [initialMission])
+    if (missions.length === 0) refresh()
+  }, [initialMission, missions.length])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -30,24 +31,43 @@ export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission }: {
     setStep('scanning')
 
     try {
+      console.log('🚀 Initializing Upload for mission:', selectedMission.id)
+      
       // 1. Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await uploadEvidence(file)
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('❌ Upload Error:', uploadError)
+        throw new Error('Upload failed: ' + (uploadError.message || 'Check storage permissions'))
+      }
+      console.log('✅ File Uploaded:', uploadData.publicUrl)
 
       // 2. Verify with AI Engine
+      console.log('🤖 Triggering AI Verification...')
       const { data: verifyData, error: verifyError } = await verifyImpact(selectedMission.id, uploadData.publicUrl)
-      if (verifyError) throw verifyError
+      
+      if (verifyError) {
+        console.error('❌ Verification Error:', verifyError)
+        throw new Error('Verification Error: ' + (verifyError.message || 'Edge function failed'))
+      }
+      
+      console.log('✨ Verification Data Received:', verifyData)
 
-      if (verifyData.status === 'verified') {
-        setReward(selectedMission.reward_ap)
+      if (verifyData && verifyData.status === 'verified') {
+        const points = selectedMission.reward_ap
+        console.log('🎉 Mission Verified! Reward:', points)
+        setReward(points)
         setStep('success')
+        onSuccess(points)
+        refresh() // Refresh profile data
       } else {
-        alert('AI Verification failed: ' + verifyData.message)
-        setStep('upload')
+        console.warn('⚠️ Verification Rejected:', verifyData)
+        throw new Error(verifyData?.message || 'AI could not verify impact authenticity')
       }
     } catch (err: any) {
-      alert('Error: ' + (err.message || 'Could not complete verification'))
+      console.error('💥 Flow Error:', err)
+      alert(err.message || 'Could not complete verification')
       setStep('upload')
+      setPreviewUrl(null)
     }
   }
 

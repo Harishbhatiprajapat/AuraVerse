@@ -142,22 +142,27 @@ const TeamItem = ({ name, members, active = false }: { name: string, members: nu
 
 const ChatMessage = ({ user, message, time, isMe = false }: { user: string, message: string, time: string, isMe?: boolean }) => (
   <motion.div 
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
+    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ type: 'spring', damping: 20, stiffness: 200 }}
     className={`flex gap-4 ${isMe ? 'flex-row-reverse' : ''}`}
   >
-    <img 
+    <motion.img 
+      whileHover={{ scale: 1.1 }}
       src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user}`} 
-      className="w-10 h-10 rounded-full bg-white/5 border border-white/10"
+      className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 shadow-lg"
     />
-    <div className={`max-w-[70%] ${isMe ? 'text-right' : ''}`}>
-      <div className={`flex items-center gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-        <span className="text-xs font-black italic uppercase tracking-tight">{user}</span>
-        <span className="text-[10px] font-black uppercase tracking-widest opacity-30">{time}</span>
+    <div className={`max-w-[75%] ${isMe ? 'text-right' : ''}`}>
+      <div className={`flex items-center gap-3 mb-2 ${isMe ? 'flex-row-reverse' : ''}`}>
+        <span className="text-xs font-black italic uppercase tracking-tighter text-white/80">{user}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest opacity-20">{time}</span>
       </div>
-      <div className={`p-4 rounded-2xl text-sm leading-relaxed ${isMe ? 'bg-brand-pink/20 border border-brand-pink/30 rounded-tr-none' : 'bg-white/5 border border-white/10 rounded-tl-none'}`}>
+      <motion.div 
+        layout
+        className={`p-5 rounded-[1.5rem] text-sm font-medium leading-relaxed shadow-xl ${isMe ? 'bg-brand-pink text-brand-navy rounded-tr-none' : 'bg-white/5 border border-white/10 rounded-tl-none backdrop-blur-xl'}`}
+      >
         {message}
-      </div>
+      </motion.div>
     </div>
   </motion.div>
 )

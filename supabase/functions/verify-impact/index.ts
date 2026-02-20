@@ -19,57 +19,71 @@ serve(async (req) => {
 
     const { user_id, mission_id, evidence_url } = await req.json()
 
-    // 🤖 AI ENGINE SIMULATION (Logic for Hackathon Prototype)
-    // In a real app, you would pass the evidence_url to Gemini/Tensorflow here.
-    const isAuthentic = Math.random() > 0.05 // 95% success rate for prototype simulation
+    if (!user_id || !mission_id) {
+      throw new Error('Missing user_id or mission_id')
+    }
+
+    // 🤖 AI ENGINE SIMULATION (95% Success rate)
+    const isAuthentic = Math.random() > 0.05
     const status = isAuthentic ? 'verified' : 'rejected'
 
-    // Update Proof Ledger
-    const { data: proof, error: proofError } = await supabaseClient
+    // 1. Log to Proof Ledger
+    const { error: ledgerError } = await supabaseClient
       .from('proof_ledger')
-      .insert({ user_id, mission_id, evidence_url, status, verified_at: new Date().toISOString() })
-      .select()
-      .single()
+      .insert({ 
+        user_id, 
+        mission_id, 
+        evidence_url, 
+        status, 
+        verified_at: new Date().toISOString() 
+      })
 
-    if (proofError) throw proofError
+    if (ledgerError) throw ledgerError
 
     if (isAuthentic) {
-      // Fetch mission reward
-      const { data: mission } = await supabaseClient
+      // 2. Fetch Reward from Missions
+      const { data: mission, error: missionError } = await supabaseClient
         .from('missions')
         .select('reward_ap')
         .eq('id', mission_id)
         .single()
 
-      if (mission) {
-        // Award AP and Increment Level logic (Simple for prototype)
-        const { data: profile } = await supabaseClient
-          .from('profiles')
-          .select('aura_points, level')
-          .eq('id', user_id)
-          .single()
+      if (missionError || !mission) throw new Error('Mission not found')
 
-        if (profile) {
-          const newPoints = profile.aura_points + mission.reward_ap
-          const newLevel = Math.floor(newPoints / 1000) + 1 // Basic leveling logic
+      // 3. Update User Profile
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('aura_points, level')
+        .eq('id', user_id)
+        .single()
 
-          await supabaseClient
-            .from('profiles')
-            .update({ aura_points: newPoints, level: newLevel })
-            .eq('id', user_id)
-        }
-      }
+      if (profileError || !profile) throw new Error('Profile not found')
+
+      const newPoints = (profile.aura_points || 0) + mission.reward_ap
+      const newLevel = Math.floor(newPoints / 1000) + 1
+
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ aura_points: newPoints, level: newLevel })
+        .eq('id', user_id)
+
+      if (updateError) throw updateError
+
+      return new Response(
+        JSON.stringify({ status: 'verified', points_added: mission.reward_ap, new_total: newPoints }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     return new Response(
-      JSON.stringify({ status, proof, message: isAuthentic ? 'Impact Verified! Aura Points awarded.' : 'Verification failed. Evidence inconclusive.' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ status: 'rejected', message: 'AI could not verify impact authenticity.' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    )
   }
 })

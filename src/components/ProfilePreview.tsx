@@ -109,7 +109,7 @@ export const ProfilePreview = () => {
               <span className="text-sm font-black text-brand-cyan tracking-[0.3em] uppercase">Reputation: {profile?.reputation_score || '100'}%</span>
             </div>
             <h2 className="text-5xl md:text-8xl font-black italic tracking-tighter leading-none break-words">
-              {profile?.username?.toUpperCase() || 'HARIS'} <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent italic">AURAV</span>
+              {profile?.username?.toUpperCase() || 'HARIS'} <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent italic">{profile?.impact_type?.toUpperCase() || 'GUARDIAN'}</span>
             </h2>
             <p className="text-lg md:text-2xl text-white/40 max-w-xl font-medium px-4 lg:px-0">
               {profile?.bio || 'Turning creative energy into measurable community impact.'} 
