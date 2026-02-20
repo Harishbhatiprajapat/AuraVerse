@@ -64,7 +64,25 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                 </div>
               </div>
             )}
-            {/* ... rest of the modal */}
+
+            <button 
+              onClick={onClose}
+              className="absolute top-8 right-8 p-2 glass-card hover:bg-white/10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6 mb-10 text-center sm:text-left">
+              <div className="w-16 h-16 bg-brand-purple/20 rounded-2xl flex items-center justify-center border border-brand-purple/30 shrink-0">
+                <Plus className="w-8 h-8 text-brand-purple" />
+              </div>
+              <div>
+                <h2 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Host a Mission</h2>
+                <p className="text-brand-purple font-bold uppercase tracking-widest text-[10px] md:text-xs">Empower your community. Earn Aura rewards.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 overflow-y-auto max-h-[60vh] md:max-h-none pr-2">
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Mission Category</label>
