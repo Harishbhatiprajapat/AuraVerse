@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAura } from '../context/AuraContext'
 
 export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview' }: { onHostMission: () => void, onParticipate: (mission: any) => void, defaultTab?: string }) => {
+  const [activeTab, setActiveTab] = useState(defaultTab)
   const { profile, missions, leaderboard, loading } = useAura()
 
   useEffect(() => {
@@ -18,7 +19,6 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
 
   return (
     <section className="px-6 py-24 md:px-24">
-      {/* ... header */}
       <div className="flex flex-col lg:flex-row items-center justify-between mb-16 gap-8">
         <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter break-words text-center lg:text-left">
           Dashboard <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent opacity-50 text-2xl md:text-4xl block md:inline">/ {activeTab}</span>
@@ -55,7 +55,7 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                   </h3>
                 </div>
                 <div className="space-y-4">
-                  {missions.length > 0 ? missions.map((m) => (
+                  {missions && missions.length > 0 ? missions.map((m: any) => (
                     <MissionCard 
                       key={m.id}
                       title={m.title} 
@@ -66,7 +66,7 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                       onClick={() => onParticipate(m)}
                     />
                   )) : (
-                    <div className="p-12 text-center glass-card opacity-40">No missions found. Host one!</div>
+                    <div className="p-12 text-center glass-card opacity-40 uppercase font-black italic tracking-widest text-xs">No missions found. Host one!</div>
                   )}
                 </div>
               </div>
@@ -76,12 +76,12 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                   <Trophy className="w-8 h-8 text-yellow-400" /> Leaderboard
                 </h3>
                 <div className="glass-card p-6 space-y-6">
-                  {leaderboard.length > 0 ? leaderboard.map((user, index) => (
+                  {leaderboard && leaderboard.length > 0 ? leaderboard.map((user: any, index: number) => (
                     <LeaderboardItem 
                       key={user.username}
                       rank={index + 1} 
                       name={user.username} 
-                      points={user.aura_points.toLocaleString()} 
+                      points={user.aura_points?.toLocaleString()} 
                       avatar={user.avatar_url} 
                     />
                   )) : (
@@ -91,7 +91,7 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                   {profile && (
                     <div className="pt-4 border-t border-white/10 mt-4">
                       <LeaderboardItem 
-                        rank={'--'} 
+                        rank={0} 
                         name={profile?.username || 'You'} 
                         points={profile?.aura_points?.toLocaleString() || '0'} 
                         avatar={profile?.avatar_url} 
@@ -128,14 +128,14 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {missions && missions.length > 0 ? missions.map((m) => (
+              {missions && missions.length > 0 ? missions.map((m: any) => (
                 <EventCard 
                   key={m.id}
                   title={m.title} 
                   host={m.username || 'Guardian'} 
                   date={new Date(m.created_at).toLocaleDateString()} 
                   ap={`${m.reward_ap} AP`} 
-                  image={m.image_url || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=250&fit=crop"}
+                  image={m.image_url || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80"}
                   onClick={() => onParticipate(m)}
                 />
               )) : (
@@ -260,14 +260,14 @@ const MissionCard = ({ title, desc, reward, type, tagColor, onClick }: { title: 
   </motion.div>
 )
 
-const LeaderboardItem = ({ rank, name, points, avatar, active = false }: { rank: number, name: string, points: string, avatar: string, active?: boolean }) => (
+const LeaderboardItem = ({ rank, name, points, avatar, active = false }: { rank: number | string, name: string, points: string, avatar: string, active?: boolean }) => (
   <motion.div 
     initial={{ opacity: 0, y: 10 }}
     whileInView={{ opacity: 1, y: 0 }}
     whileHover={{ x: 5 }}
     className={`flex items-center gap-4 p-3 rounded-2xl transition-all ${active ? 'bg-brand-blue/10 border border-brand-blue/30 shadow-[0_0_20px_rgba(0,210,255,0.1)]' : 'hover:bg-white/5'}`}
   >
-    <span className={`w-8 font-black italic text-xl ${rank <= 3 ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(0,210,255,0.5)]' : 'text-white/20'}`}>{rank}</span>
+    <span className={`w-8 font-black italic text-xl ${typeof rank === 'number' && rank <= 3 ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(0,210,255,0.5)]' : 'text-white/20'}`}>{rank}</span>
     <div className="relative">
       <img src={avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Haris"} alt={name} className="w-12 h-12 rounded-full bg-white/5 border border-white/10" />
       {active && <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-blue rounded-full border-4 border-brand-navy flex items-center justify-center animate-pulse" />}

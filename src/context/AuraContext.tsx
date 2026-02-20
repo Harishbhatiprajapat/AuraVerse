@@ -102,7 +102,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Use a flat path for simplicity in proofs bucket
     const fileName = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_')}`
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('evidence')
       .upload(fileName, file, { 
         cacheControl: '3600',
