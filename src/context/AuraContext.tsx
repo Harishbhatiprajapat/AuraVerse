@@ -28,7 +28,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     
-    // 1. Fetch Leaderboard (Always public)
+    // 1. Fetch Leaderboard
     const { data: lData } = await supabase
       .from('profiles')
       .select('username, aura_points, avatar_url, level')
@@ -38,7 +38,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (localStorage.getItem('aura_demo_mode') === 'true' && !user) {
       setIsDemo(true)
-      setProfile({ id: 'demo', username: 'DemoLegend', aura_points: 25000, level: 50, avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo' })
+      setProfile({ id: 'demo', username: 'DemoLegend', aura_points: 25000, level: 50, avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo', impact_type: 'Legendary', bio: 'Living the demo life.' })
       setLoading(false)
       return
     }
@@ -46,18 +46,24 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) { setLoading(false); return; }
 
     try {
-      // 2. Fetch Missions
-      const { data: mData } = await supabase
+      // 2. Fetch Missions with Host Join
+      const { data: mData, error: mError } = await supabase
         .from('missions')
-        .select('*')
+        .select('*, profiles:user_id (username)')
         .order('created_at', { ascending: false })
       
-      setMissions(mData || [])
-      setMyMissions((mData || []).filter(m => m.user_id === user.id))
+      if (!mError) {
+        const formatted = (mData || []).map(m => ({ 
+          ...m, 
+          username: (m.profiles as any)?.username || 'Aura Sentinel' 
+        }))
+        setMissions(formatted)
+        setMyMissions(formatted.filter(m => m.user_id === user.id))
+      }
 
       // 3. Fetch My Profile
       const { data: pData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-      setProfile(pData)
+      if (pData) setProfile(pData)
     } catch (e) {
       console.error('Fetch Error:', e)
     } finally {
@@ -75,24 +81,35 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const verifyImpact = async (missionId: string, evidenceUrl: string) => {
-    if (isDemo) return { data: { status: 'verified', message: 'Demo Mode Impact Verified', reward: 1000 } }
+    if (isDemo) return { data: { status: 'verified', reward: 1000 } }
     
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Auth required' }
     
-    try {
-      const response = await supabase.functions.invoke('verify-impact', {
-        body: { user_id: user.id, mission_id: missionId, evidence_url: evidenceUrl },
-      })
-      return response
-    } catch (e: any) {
-      console.error('Edge Function Fatal:', e)
-      return { error: 'Network error communicating with AI engine' }
+    // Explicitly handle invoke result
+    const { data, error } = await supabase.functions.invoke('verify-impact', {
+      body: { user_id: user.id, mission_id: missionId, evidence_url: evidenceUrl },
+    })
+
+    if (error) {
+      console.error('Edge Function Error:', error)
+      return { error: error.message || 'Verification failed' }
     }
+
+    if (data?.status === 'verified') {
+      await fetchData() // Refresh all stats instantly
+    }
+
+    return { data }
   }
 
   const createMission = async (missionData: any) => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (isDemo) {
+      const nm = { ...missionData, id: Math.random().toString(), user_id: 'demo', created_at: new Date().toISOString(), username: 'DemoLegend' }
+      setMissions(prev => [nm, ...prev])
+      return { data: nm }
+    }
     const res = await supabase.from('missions').insert([{ ...missionData, user_id: user?.id }]).select()
     if (!res.error) await fetchData()
     return res
@@ -100,6 +117,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updates: any) => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (isDemo) { setProfile({ ...profile, ...updates }); return { data: updates } }
     const res = await supabase.from('profiles').update(updates).eq('id', user?.id).select()
     if (!res.error) setProfile(res.data[0])
     return res
@@ -107,27 +125,10 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const uploadEvidence = async (file: File) => {
     if (isDemo) return { data: { publicUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09' } }
-    
-    // Use a flat path for simplicity in proofs bucket
     const fileName = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_')}`
-    
-    const { error } = await supabase.storage
-      .from('evidence')
-      .upload(fileName, file, { 
-        cacheControl: '3600',
-        upsert: false 
-      })
-
-    if (error) {
-      console.error('Storage Upload Error:', error)
-      return { error }
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('evidence')
-      .getPublicUrl(fileName)
-
-    return { data: { publicUrl: urlData.publicUrl } }
+    const { error } = await supabase.storage.from('evidence').upload(fileName, file)
+    if (error) return { error }
+    return { data: { publicUrl: supabase.storage.from('evidence').getPublicUrl(fileName).data.publicUrl } }
   }
 
   return (
@@ -139,6 +140,6 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAura = () => {
   const context = useContext(AuraContext)
-  if (context === undefined) throw new Error('useAura context error')
+  if (context === undefined) throw new Error('AuraContext error')
   return context
 }

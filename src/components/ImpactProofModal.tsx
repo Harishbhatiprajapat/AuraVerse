@@ -42,23 +42,22 @@ export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission, onS
       console.log('✅ File Uploaded:', uploadData.publicUrl)
 
       // 2. Verify with AI Engine
-      console.log('🤖 Triggering AI Verification...')
+      console.log('🤖 Triggering AI Verification for:', selectedMission.title)
       const { data: verifyData, error: verifyError } = await verifyImpact(selectedMission.id, uploadData.publicUrl)
       
       if (verifyError) {
         console.error('❌ Verification Error:', verifyError)
-        throw new Error('Verification Error: ' + (verifyError.message || 'Edge function failed'))
+        throw new Error(typeof verifyError === 'string' ? verifyError : 'Edge function failed')
       }
       
       console.log('✨ Verification Data Received:', verifyData)
 
-      if (verifyData && verifyData.status === 'verified') {
-        const points = selectedMission.reward_ap
+      if (verifyData && (verifyData.status === 'verified' || verifyData.status === 'success')) {
+        const points = verifyData.reward || selectedMission.reward_ap || 1000
         console.log('🎉 Mission Verified! Reward:', points)
         setReward(points)
         setStep('success')
         onSuccess(points)
-        refresh() // Refresh profile data
       } else {
         console.warn('⚠️ Verification Rejected:', verifyData)
         throw new Error(verifyData?.message || 'AI could not verify impact authenticity')
