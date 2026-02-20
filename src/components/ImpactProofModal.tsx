@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Upload, ShieldCheck, Sparkles, Loader2, CheckCircle } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import { useAura } from '../hooks/useAura'
+import { useAura } from '../context/AuraContext'
 
 export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission, onSuccess }: { isOpen: boolean, onClose: () => void, mission: any, onSuccess: (amount: number) => void }) => {
   const [step, setStep] = useState<'upload' | 'scanning' | 'success'>('upload')

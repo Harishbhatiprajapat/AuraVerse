@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { MessageSquare, Send, Users, Circle, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useAura } from '../hooks/useAura'
+import { useAura } from '../context/AuraContext'
 import { motion } from 'framer-motion'
 
 export const CollaborationRoom = () => {

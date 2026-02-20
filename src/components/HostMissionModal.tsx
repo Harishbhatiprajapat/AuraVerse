@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Rocket, Globe, Users, Trophy, Image as ImageIcon } from 'lucide-react'
 import { useState } from 'react'
-import { useAura } from '../hooks/useAura'
+import { useAura } from '../context/AuraContext'
 
 export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [missionType, setMissionType] = useState('Environmental')

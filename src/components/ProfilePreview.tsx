@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, Leaf, Flame, Award, Globe, Edit3, X, Save } from 'lucide-react'
-import { useAura } from '../hooks/useAura'
+import { useAura } from '../context/AuraContext'
 import { useState } from 'react'
 
 export const ProfilePreview = () => {

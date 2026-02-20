@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, TrendingUp, Zap, Users, Leaf, Calendar, Plus, Map, List, Globe } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useAura } from '../hooks/useAura'
+import { useAura } from '../context/AuraContext'
 
 export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview' }: { onHostMission: () => void, onParticipate: (mission: any) => void, defaultTab?: string }) => {
   const [activeTab, setActiveTab] = useState(defaultTab)

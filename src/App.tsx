@@ -12,10 +12,11 @@ import { CollaborationRoom } from './components/CollaborationRoom'
 import { Auth } from './components/Auth'
 import { APBurst } from './components/APBurst'
 import { BackgroundAura } from './components/BackgroundAura'
+import { AuraProvider } from './context/AuraContext'
 import type { Session } from '@supabase/supabase-js'
 import './App.css'
 
-function App() {
+function AppContent() {
   const [session, setSession] = useState<Session | null>(null)
   const [currentView, setCurrentView] = useState<ViewType>('home')
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
@@ -64,6 +65,35 @@ function App() {
     return <Auth onDemoLogin={handleDemoLogin} />
   }
 
+  const renderView = () => {
+    switch (currentView) {
+      case 'home':
+        return (
+          <div key="home">
+            <Hero onActionClick={() => setCurrentView('missions')} />
+            <ProfilePreview />
+          </div>
+        )
+      case 'dashboard':
+      case 'missions':
+        return (
+          <div key="dashboard" className="pt-32">
+            <Dashboard 
+              onHostMission={() => setIsHostModalOpen(true)} 
+              onParticipate={handleParticipate}
+              defaultTab={currentView === 'missions' ? 'Events' : 'Overview'}
+            />
+          </div>
+        )
+      case 'community':
+        return (
+          <div key="community" className="pt-32">
+            <CollaborationRoom />
+          </div>
+        )
+    }
+  }
+
   return (
     <main className="relative min-h-screen pb-40 selection:bg-brand-blue/30">
       <BackgroundAura />
@@ -81,28 +111,7 @@ function App() {
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
-          {currentView === 'home' && (
-            <>
-              <Hero onActionClick={() => setCurrentView('missions')} />
-              <ProfilePreview />
-            </>
-          )}
-          
-          {(currentView === 'dashboard' || currentView === 'missions') && (
-            <div className="pt-32">
-              <Dashboard 
-                onHostMission={() => setIsHostModalOpen(true)} 
-                onParticipate={handleParticipate}
-                defaultTab={currentView === 'missions' ? 'Events' : 'Overview'}
-              />
-            </div>
-          )}
-
-          {currentView === 'community' && (
-            <div className="pt-32">
-              <CollaborationRoom />
-            </div>
-          )}
+          {renderView()}
         </motion.div>
       </AnimatePresence>
       
@@ -120,6 +129,14 @@ function App() {
         onComplete={() => setCelebration({ ...celebration, isVisible: false })} 
       />
     </main>
+  )
+}
+
+function App() {
+  return (
+    <AuraProvider>
+      <AppContent />
+    </AuraProvider>
   )
 }
 
