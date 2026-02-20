@@ -91,10 +91,10 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                   {profile && (
                     <div className="pt-4 border-t border-white/10 mt-4">
                       <LeaderboardItem 
-                        rank={0} 
+                        rank={'--'} 
                         name={profile?.username || 'You'} 
                         points={profile?.aura_points?.toLocaleString() || '0'} 
-                        avatar={profile?.avatar_url} 
+                        avatar={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username}`} 
                         active 
                       />
                     </div>
