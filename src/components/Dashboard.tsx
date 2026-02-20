@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAura } from '../context/AuraContext'
 
 export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview' }: { onHostMission: () => void, onParticipate: (mission: any) => void, defaultTab?: string }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab)
-  const { profile, missions, loading } = useAura()
+  const { profile, missions, leaderboard, loading } = useAura()
 
   useEffect(() => {
     setActiveTab(defaultTab)
@@ -19,7 +18,7 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
 
   return (
     <section className="px-6 py-24 md:px-24">
-      {/* ... header logic */}
+      {/* ... header */}
       <div className="flex flex-col lg:flex-row items-center justify-between mb-16 gap-8">
         <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter break-words text-center lg:text-left">
           Dashboard <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent opacity-50 text-2xl md:text-4xl block md:inline">/ {activeTab}</span>
@@ -72,24 +71,34 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
                 </div>
               </div>
 
-              {/* ... leaderboard logic */}
               <div className="space-y-8">
                 <h3 className="text-3xl font-bold flex items-center gap-3 italic uppercase tracking-tight">
                   <Trophy className="w-8 h-8 text-yellow-400" /> Leaderboard
                 </h3>
                 <div className="glass-card p-6 space-y-6">
-                  <LeaderboardItem rank={1} name="AuraLegend_99" points="152k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Aura" />
-                  <LeaderboardItem rank={2} name="EcoWarrior" points="128k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Eco" />
-                  <LeaderboardItem rank={3} name="CyberImpact" points="98k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Impact" />
-                  <div className="pt-4 border-t border-white/10 mt-4">
+                  {leaderboard.length > 0 ? leaderboard.map((user, index) => (
                     <LeaderboardItem 
-                      rank={142} 
-                      name={profile?.username || 'You'} 
-                      points={profile?.aura_points?.toLocaleString() || '0'} 
-                      avatar={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || 'Haris'}`} 
-                      active 
+                      key={user.username}
+                      rank={index + 1} 
+                      name={user.username} 
+                      points={user.aura_points.toLocaleString()} 
+                      avatar={user.avatar_url} 
                     />
-                  </div>
+                  )) : (
+                    <div className="p-8 text-center text-white/20 uppercase tracking-widest text-[10px]">No Rankings Yet</div>
+                  )}
+                  
+                  {profile && (
+                    <div className="pt-4 border-t border-white/10 mt-4">
+                      <LeaderboardItem 
+                        rank={'--'} 
+                        name={profile?.username || 'You'} 
+                        points={profile?.aura_points?.toLocaleString() || '0'} 
+                        avatar={profile?.avatar_url} 
+                        active 
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
