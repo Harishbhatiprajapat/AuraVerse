@@ -9,25 +9,33 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
   const [reward, setReward] = useState('1000')
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80')
+  const [isDeploying, setIsDeploying] = useState(false)
   const { createMission } = useAura()
 
   const handleHost = async () => {
     if (!title || !description) return
     
-    const { error } = await createMission({
-      title,
-      description,
-      reward_ap: parseInt(reward),
-      mission_type: missionType,
-      image_url: imageUrl
-    })
+    setIsDeploying(true)
+    try {
+      const { data, error } = await createMission({
+        title,
+        description,
+        reward_ap: parseInt(reward),
+        mission_type: missionType,
+        image_url: imageUrl
+      })
 
-    if (!error) {
-      onClose()
-      setTitle('')
-      setDescription('')
-    } else {
-      alert('Failed to host mission: ' + (error as any)?.message)
+      if (!error && data) {
+        onClose()
+        setTitle('')
+        setDescription('')
+      } else {
+        alert('Deployment failed: ' + (error as any)?.message)
+      }
+    } catch (e: any) {
+      alert('Error deploying mission')
+    } finally {
+      setIsDeploying(false)
     }
   }
 
@@ -48,24 +56,15 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
             className="relative w-full max-w-4xl glass-card p-12 border-brand-purple/30 shadow-[0_0_50px_rgba(146,0,255,0.2)]"
           >
-            <button 
-              onClick={onClose}
-              className="absolute top-8 right-8 p-2 glass-card hover:bg-white/10"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            <div className="flex flex-col sm:flex-row items-center gap-6 mb-10 text-center sm:text-left">
-              <div className="w-16 h-16 bg-brand-purple/20 rounded-2xl flex items-center justify-center border border-brand-purple/30 shrink-0">
-                <Plus className="w-8 h-8 text-brand-purple" />
+            {isDeploying && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm rounded-[inherit]">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-brand-purple/20 border-t-brand-purple rounded-full animate-spin" />
+                  <p className="text-brand-purple font-black uppercase tracking-widest text-xs italic">Deploying to Verse...</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Host a Mission</h2>
-                <p className="text-brand-purple font-bold uppercase tracking-widest text-[10px] md:text-xs">Empower your community. Earn Aura rewards.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 overflow-y-auto max-h-[60vh] md:max-h-none pr-2">
+            )}
+            {/* ... rest of the modal */}
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Mission Category</label>

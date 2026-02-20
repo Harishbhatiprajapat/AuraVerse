@@ -122,22 +122,27 @@ export const useAura = () => {
 
   const createMission = async (missionData: { title: string, description: string, reward_ap: number, mission_type: string, image_url?: string }) => {
     const { data: { user } } = await supabase.auth.getUser()
-    const userId = user?.id || 'demo-user'
-
+    
     if (isDemo) {
-      const newMission = { ...missionData, id: Math.random().toString(), user_id: userId }
-      setMissions([ newMission, ...missions])
-      setMyMissions([ newMission, ...myMissions])
+      const newMission = { ...missionData, id: Math.random().toString(), user_id: 'demo-user', created_at: new Date().toISOString() }
+      setMissions(prev => [newMission, ...prev])
+      setMyMissions(prev => [newMission, ...prev])
       return { data: newMission }
     }
 
+    if (!user) return { error: { message: 'Authentication required' } }
+
     const { data, error } = await supabase
       .from('missions')
-      .insert([{ ...missionData, user_id: userId }])
+      .insert([{ ...missionData, user_id: user.id }])
       .select()
 
-    if (!error) fetchData() // Refresh missions list
-    return { data, error }
+    if (!error && data) {
+      await fetchData() // Force full re-fetch to sync username metadata
+      return { data: data[0] }
+    }
+    
+    return { error }
   }
 
   const updateProfile = async (updates: { username?: string, bio?: string, avatar_url?: string }) => {
