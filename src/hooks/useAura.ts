@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 export const useAura = () => {
   const [profile, setProfile] = useState<any>(null)
   const [missions, setMissions] = useState<any[]>([])
+  const [myMissions, setMyMissions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isDemo, setIsDemo] = useState(false)
 
@@ -26,10 +27,12 @@ export const useAura = () => {
           reputation_score: 99.9,
           impact_type: 'Legendary'
         })
-        setMissions([
-          { id: '1', title: 'Global Reforestation', reward_ap: 5000, mission_type: 'Environmental', description: 'Sample mission for demo.' },
-          { id: '2', title: 'Civic Hackathon', reward_ap: 3000, mission_type: 'Civic', description: 'Sample mission for demo.' }
-        ])
+        const mockMissions = [
+          { id: '1', title: 'Global Reforestation', reward_ap: 5000, mission_type: 'Environmental', description: 'Sample mission for demo.', user_id: 'demo-user' },
+          { id: '2', title: 'Civic Hackathon', reward_ap: 3000, mission_type: 'Civic', description: 'Sample mission for demo.', user_id: 'other-user' }
+        ]
+        setMissions(mockMissions)
+        setMyMissions(mockMissions.filter(m => m.user_id === 'demo-user'))
         setLoading(false)
         return
       }
@@ -44,6 +47,7 @@ export const useAura = () => {
       .order('created_at', { ascending: false })
     
     setMissions(missionsData || [])
+    setMyMissions((missionsData || []).filter(m => m.user_id === user.id))
 
     // 2. Fetch Profile
     const { data: profileData } = await supabase
@@ -95,19 +99,43 @@ export const useAura = () => {
   }
 
   const createMission = async (missionData: { title: string, description: string, reward_ap: number, mission_type: string }) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'demo-user'
+
     if (isDemo) {
-      setMissions([ { ...missionData, id: Math.random().toString() }, ...missions])
-      return { data: missionData }
+      const newMission = { ...missionData, id: Math.random().toString(), user_id: userId }
+      setMissions([ newMission, ...missions])
+      setMyMissions([ newMission, ...myMissions])
+      return { data: newMission }
     }
 
     const { data, error } = await supabase
       .from('missions')
-      .insert([missionData])
+      .insert([{ ...missionData, user_id: userId }])
       .select()
 
     if (!error) fetchData() // Refresh missions list
     return { data, error }
   }
 
-  return { profile, missions, loading, verifyImpact, createMission, refresh: fetchData }
+  const updateProfile = async (updates: { username?: string, bio?: string, avatar_url?: string }) => {
+    if (isDemo) {
+      setProfile({ ...profile, ...updates })
+      return { data: updates }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not authenticated' }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id)
+      .select()
+
+    if (!error) setProfile(data[0])
+    return { data, error }
+  }
+
+  return { profile, missions, myMissions, loading, verifyImpact, createMission, updateProfile, refresh: fetchData }
 }

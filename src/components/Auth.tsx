@@ -7,6 +7,7 @@ export const Auth = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -26,7 +27,13 @@ export const Auth = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       } else {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { username }
+          }
+        })
         if (error) throw error
         alert('Verification email sent! Check your inbox.')
       }
@@ -43,7 +50,7 @@ export const Auth = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#020208] relative overflow-hidden">
-      {/* ... (background glows remain) */}
+      {/* ... (background glows) */}
       <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-brand-blue/10 rounded-full blur-[150px] animate-liquid" />
       <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-brand-purple/10 rounded-full blur-[150px] animate-liquid" />
 
@@ -65,6 +72,23 @@ export const Auth = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-6">
+          {!isLogin && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-4">Identity Handle</label>
+              <div className="relative group">
+                <User className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-brand-blue transition-colors" />
+                <input 
+                  type="text" 
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="aura_guardian"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl pl-16 pr-6 py-5 focus:outline-none focus:border-brand-blue/50 transition-all font-medium text-lg"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-4">Email Node</label>
             <div className="relative group">
