@@ -55,12 +55,18 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { data: missionsData } = await supabase
+      const { data: missionsData, error: mError } = await supabase
         .from('missions')
         .select('*, profiles:user_id (username)')
         .order('created_at', { ascending: false })
       
-      const formatted = (missionsData || []).map(m => ({ ...m, username: m.profiles?.username || 'Guardian' }))
+      if (mError) throw mError
+
+      const formatted = (missionsData || []).map(m => ({ 
+        ...m, 
+        username: (m.profiles as any)?.username || 'Aura Sentinel' 
+      }))
+      
       setMissions(formatted)
       setMyMissions(formatted.filter(m => m.user_id === user.id))
 
@@ -95,13 +101,20 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createMission = async (missionData: any) => {
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user && !isDemo) return { error: 'Auth required' }
+
     if (isDemo) {
       const nm = { ...missionData, id: Math.random().toString(), user_id: 'demo-user', created_at: new Date().toISOString(), username: 'DemoLegend' }
       setMissions(prev => [nm, ...prev])
       setMyMissions(prev => [nm, ...prev])
       return { data: nm }
     }
-    const res = await supabase.from('missions').insert([{ ...missionData, user_id: user?.id }]).select()
+
+    const res = await supabase
+      .from('missions')
+      .insert([{ ...missionData, user_id: user?.id }])
+      .select()
+    
     if (!res.error) await fetchData()
     return res
   }
