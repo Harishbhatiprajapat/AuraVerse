@@ -7,7 +7,6 @@ export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean
   const [step, setStep] = useState<'upload' | 'scanning' | 'success'>('upload')
   const { verifyImpact, uploadEvidence } = useAura()
   const [reward, setReward] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
