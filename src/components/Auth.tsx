@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '../lib/supabase'
-import { Zap, Mail, Lock, User, ArrowRight, Github } from 'lucide-react'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { Zap, Mail, Lock, User, ArrowRight, Github, AlertTriangle } from 'lucide-react'
 
-export const Auth = () => {
+export const Auth = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -15,6 +15,12 @@ export const Auth = () => {
     setLoading(true)
     setError(null)
 
+    if (!isSupabaseConfigured()) {
+      setError('🔴 ENV ERROR: Supabase keys not found. If on Vercel, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to Project Settings.')
+      setLoading(false)
+      return
+    }
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -25,7 +31,11 @@ export const Auth = () => {
         alert('Verification email sent! Check your inbox.')
       }
     } catch (e: any) {
-      setError(e.message)
+      if (e.message === 'Failed to fetch') {
+        setError('🔴 CONNECTION ERROR: Could not reach Supabase. Check your URL or internet connection.')
+      } else {
+        setError(e.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -33,7 +43,7 @@ export const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#020208] relative overflow-hidden">
-      {/* Background Glows */}
+      {/* ... (background glows remain) */}
       <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-brand-blue/10 rounded-full blur-[150px] animate-liquid" />
       <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-brand-purple/10 rounded-full blur-[150px] animate-liquid" />
 
@@ -106,7 +116,17 @@ export const Auth = () => {
           </button>
         </form>
 
-        <div className="mt-12 pt-12 border-t border-white/5 flex flex-col items-center gap-8">
+        <div className="mt-8">
+           <button 
+             onClick={onDemoLogin}
+             type="button"
+             className="w-full py-4 glass-million border-brand-purple/40 text-brand-purple font-black text-sm rounded-xl hover:bg-brand-purple/10 transition-all uppercase tracking-widest italic"
+           >
+             ⚡ Enter as Guest (Demo Legend)
+           </button>
+        </div>
+
+        <div className="mt-10 pt-10 border-t border-white/5 flex flex-col items-center gap-6">
           <p className="text-white/30 font-bold uppercase tracking-widest text-[10px]">Or continue with</p>
           <div className="flex gap-4">
              <SocialButton icon={<Github className="w-6 h-6" />} />

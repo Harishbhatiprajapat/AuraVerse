@@ -1,13 +1,29 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Upload, ShieldCheck, MapPin, Camera, Sparkles, Loader2, CheckCircle } from 'lucide-react'
 import { useState } from 'react'
+import { useAura } from '../hooks/useAura'
 
 export const ImpactProofModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [step, setStep] = useState<'upload' | 'scanning' | 'success'>('upload')
+  const { verifyImpact, missions } = useAura()
+  const [reward, setReward] = useState(0)
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
+    if (missions.length === 0) return
+    
     setStep('scanning')
-    setTimeout(() => setStep('success'), 3000)
+    
+    // Use the first mission as a sample for the prototype
+    const sampleMission = missions[0]
+    const { data, error } = await verifyImpact(sampleMission.id, 'https://example.com/evidence.jpg')
+    
+    if (!error && data.status === 'verified') {
+      setReward(sampleMission.reward_ap)
+      setStep('success')
+    } else {
+      alert('Verification failed: ' + (error || 'AI could not verify impact'))
+      setStep('upload')
+    }
   }
 
   return (
@@ -125,7 +141,7 @@ export const ImpactProofModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                   </motion.div>
                   <h3 className="text-5xl font-black italic uppercase tracking-tighter text-brand-cyan">Impact Verified!</h3>
                   <div className="px-10 py-4 glass-million border-brand-cyan/20 bg-brand-cyan/5">
-                    <span className="text-2xl font-black text-white italic">+1,200 <span className="text-brand-cyan">Aura Points</span> Awarded</span>
+                    <span className="text-2xl font-black text-white italic">+{reward.toLocaleString()} <span className="text-brand-cyan">Aura Points</span> Awarded</span>
                   </div>
                   <button 
                     onClick={() => { onClose(); setStep('upload'); }}

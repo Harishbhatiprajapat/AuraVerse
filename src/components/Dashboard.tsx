@@ -1,13 +1,21 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, TrendingUp, Zap, Users, Leaf, Calendar, Plus, Map, List, Globe } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useAura } from '../hooks/useAura'
 
 export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMission: () => void, defaultTab?: string }) => {
   const [activeTab, setActiveTab] = useState(defaultTab)
+  const { profile, missions, loading } = useAura()
 
   useEffect(() => {
     setActiveTab(defaultTab)
   }, [defaultTab])
+
+  if (loading) return (
+    <div className="h-64 flex items-center justify-center">
+       <div className="w-10 h-10 border-2 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+    </div>
+  )
 
   return (
     <section className="px-6 py-24 md:px-24">
@@ -33,9 +41,9 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
             className="space-y-12"
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <StatCard icon={<Zap className="w-8 h-8 text-brand-blue" />} label="Aura Points" value="12,450" sub="AP ✨" />
-              <StatCard icon={<TrendingUp className="w-8 h-8 text-brand-cyan" />} label="Impact Score" value="85.2" sub="Points 🚀" />
-              <StatCard icon={<Trophy className="w-8 h-8 text-brand-purple" />} label="Level" value="20" sub="Innovator 🎖" />
+              <StatCard icon={<Zap className="w-8 h-8 text-brand-blue" />} label="Aura Points" value={profile?.aura_points?.toLocaleString() || '0'} sub="AP ✨" />
+              <StatCard icon={<TrendingUp className="w-8 h-8 text-brand-cyan" />} label="Impact Score" value={profile?.reputation_score || '0'} sub="Points 🚀" />
+              <StatCard icon={<Trophy className="w-8 h-8 text-brand-purple" />} label="Level" value={profile?.level || '1'} sub="Innovator 🎖" />
               <StatCard icon={<Users className="w-8 h-8 text-brand-pink" />} label="Streak" value="12" sub="Days 🔥" />
             </div>
 
@@ -47,9 +55,18 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
                   </h3>
                 </div>
                 <div className="space-y-4">
-                  <MissionCard title="Plastic Free Week" desc="Reduce all single-use plastic consumption for 7 days." reward="500 AP" type="Environmental" tagColor="bg-green-500/20 text-green-400 border-green-500/30" />
-                  <MissionCard title="Community Clean-up" desc="Organize or join a local park cleaning session." reward="1200 AP" type="Civic" tagColor="bg-blue-500/20 text-blue-400 border-blue-500/30" />
-                  <MissionCard title="Code for Good" desc="Contribute to an open-source environmental project." reward="2000 AP" type="Creative" tagColor="bg-purple-500/20 text-purple-400 border-purple-500/30" />
+                  {missions.length > 0 ? missions.map((m) => (
+                    <MissionCard 
+                      key={m.id}
+                      title={m.title} 
+                      desc={m.description} 
+                      reward={`${m.reward_ap} AP`} 
+                      type={m.mission_type} 
+                      tagColor={m.mission_type === 'Environmental' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'} 
+                    />
+                  )) : (
+                    <div className="p-12 text-center glass-card opacity-40">No missions found. Host one!</div>
+                  )}
                 </div>
               </div>
 
@@ -62,7 +79,7 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
                   <LeaderboardItem rank={2} name="EcoWarrior" points="128k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Eco" />
                   <LeaderboardItem rank={3} name="CyberImpact" points="98k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Impact" />
                   <div className="pt-4 border-t border-white/10 mt-4">
-                    <LeaderboardItem rank={142} name="You (Haris)" points="12.4k" avatar="https://api.dicebear.com/7.x/avataaars/svg?seed=Haris" active />
+                    <LeaderboardItem rank={142} name={profile?.username || 'You'} points={profile?.aura_points?.toLocaleString() || '0'} avatar={profile?.avatar_url} active />
                   </div>
                 </div>
               </div>
@@ -129,7 +146,6 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
                    </div>
                  </div>
                </div>
-               {/* Mock Map Background */}
                <div className="absolute inset-0 opacity-20 grayscale scale-150">
                  <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&h=800&fit=crop" className="w-full h-full object-cover" />
                </div>
@@ -186,7 +202,7 @@ const MissionCard = ({ title, desc, reward, type, tagColor }: { title: string, d
 const LeaderboardItem = ({ rank, name, points, avatar, active = false }: { rank: number, name: string, points: string, avatar: string, active?: boolean }) => (
   <div className={`flex items-center gap-4 ${active ? 'bg-brand-blue/10 p-2 rounded-xl -mx-2 border border-brand-blue/20 shadow-[0_0_15px_rgba(0,210,255,0.1)]' : ''}`}>
     <span className={`w-6 font-black text-lg ${rank <= 3 ? 'text-brand-blue' : 'text-white/20'}`}>{rank}</span>
-    <img src={avatar} alt={name} className="w-10 h-10 rounded-full bg-white/10" />
+    <img src={avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Haris"} alt={name} className="w-10 h-10 rounded-full bg-white/5" />
     <span className={`flex-1 font-bold ${active ? 'text-white' : 'text-white/70'}`}>{name}</span>
     <span className="font-black text-brand-blue italic uppercase tracking-tighter">{points}</span>
   </div>

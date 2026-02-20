@@ -1,9 +1,33 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Rocket, Globe, Users, Trophy } from 'lucide-react'
 import { useState } from 'react'
+import { useAura } from '../hooks/useAura'
 
 export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [missionType, setMissionType] = useState('Environmental')
+  const [title, setTitle] = useState('')
+  const [reward, setReward] = useState('1000')
+  const [description, setDescription] = useState('')
+  const { createMission } = useAura()
+
+  const handleHost = async () => {
+    if (!title || !description) return
+    
+    const { error } = await createMission({
+      title,
+      description,
+      reward_ap: parseInt(reward),
+      mission_type: missionType
+    })
+
+    if (!error) {
+      onClose()
+      setTitle('')
+      setDescription('')
+    } else {
+      alert('Failed to host mission: ' + (error as any)?.message)
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -54,6 +78,8 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Mission Title</label>
                   <input 
                     type="text" 
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Urban Reforestation Drive"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-brand-purple/50 transition-all font-bold"
                   />
@@ -65,6 +91,8 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                     <Trophy className="w-5 h-5 text-brand-purple" />
                     <input 
                       type="number" 
+                      value={reward}
+                      onChange={(e) => setReward(e.target.value)}
                       placeholder="1000"
                       className="bg-transparent focus:outline-none font-black text-xl w-full"
                     />
@@ -77,6 +105,8 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Mission Brief</label>
                   <textarea 
                     rows={6}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe the impact goals and requirements..."
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-brand-purple/50 transition-all font-medium text-sm resize-none"
                   />
@@ -94,7 +124,10 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
               </div>
             </div>
 
-            <button className="w-full mt-10 py-6 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-black text-xl rounded-2xl shadow-[0_0_40px_rgba(146,0,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest italic">
+            <button 
+              onClick={handleHost}
+              className="w-full mt-10 py-6 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-black text-xl rounded-2xl shadow-[0_0_40px_rgba(146,0,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest italic"
+            >
               Deploy Mission to AuraVerse
             </button>
           </motion.div>

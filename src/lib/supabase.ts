@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-if (!import.meta.env.VITE_SUPABASE_URL) {
-  console.error('🔴 AURA-ERROR: VITE_SUPABASE_URL is missing! The app will show a white screen or fail to load data. Please add it to your .env file.')
+export const isSupabaseConfigured = () => {
+  return !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY && !import.meta.env.VITE_SUPABASE_URL.includes('placeholder')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!isSupabaseConfigured()) {
+  console.error('🔴 AURA-ERROR: Supabase credentials are missing or invalid! Please check your .env file.')
+}
+
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder-fail.supabase.co', 
+  supabaseAnonKey || 'placeholder-key'
+)

@@ -35,6 +35,15 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const handleDemoLogin = () => {
+    localStorage.setItem('aura_demo_mode', 'true')
+    const mockSession = { 
+      access_token: 'demo-token', 
+      user: { id: 'demo-user', email: 'demo@auraverse.co' } 
+    } as any
+    setSession(mockSession)
+  }
+
   const renderView = () => {
     switch (currentView) {
       case 'home':
@@ -99,7 +108,7 @@ function App() {
   )
 
   if (!session) {
-    return <Auth />
+    return <Auth onDemoLogin={handleDemoLogin} />
   }
 
   return (

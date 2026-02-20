@@ -1,7 +1,12 @@
 import { motion } from 'framer-motion'
 import { ShieldCheck, Leaf, Flame, Award, Globe } from 'lucide-react'
+import { useAura } from '../hooks/useAura'
 
 export const ProfilePreview = () => {
+  const { profile, loading } = useAura()
+
+  if (loading) return null
+
   return (
     <section className="px-6 py-32 md:px-24 relative overflow-hidden">
       {/* Hyper-Liquid Background Aura */}
@@ -24,7 +29,7 @@ export const ProfilePreview = () => {
           <div className="relative w-72 h-72 md:w-96 md:h-96 rounded-full overflow-hidden border-4 border-white/5 bg-brand-navy p-2 shadow-2xl">
             <div className="w-full h-full rounded-full overflow-hidden relative">
               <img 
-                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Haris" 
+                src={profile?.avatar_url || "https://api.dicebear.com/7.x/avataaars/svg?seed=Haris"} 
                 alt="Profile" 
                 className="w-full h-full object-cover p-12 transform group-hover:scale-110 transition-transform duration-700"
               />
@@ -43,7 +48,7 @@ export const ProfilePreview = () => {
           </motion.div>
 
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-10 py-3 glass-million rounded-full font-black text-brand-blue border-brand-blue/40 shadow-[0_0_30px_rgba(0,210,255,0.4)] tracking-widest uppercase italic">
-            LEVEL 20 <span className="text-white/30 text-xs ml-2">Innovator</span>
+            LEVEL {profile?.level || '1'} <span className="text-white/30 text-xs ml-2">{profile?.impact_type || 'Innovator'}</span>
           </div>
         </div>
 
@@ -52,10 +57,10 @@ export const ProfilePreview = () => {
           <div className="space-y-4">
             <div className="inline-flex items-center gap-3 px-6 py-2 glass-million border-brand-cyan/20">
               <ShieldCheck className="w-5 h-5 text-brand-cyan" />
-              <span className="text-sm font-black text-brand-cyan tracking-[0.3em] uppercase">Reputation: 98.5%</span>
+              <span className="text-sm font-black text-brand-cyan tracking-[0.3em] uppercase">Reputation: {profile?.reputation_score || '100'}%</span>
             </div>
             <h2 className="text-5xl md:text-8xl font-black italic tracking-tighter leading-none break-words">
-              HARIS <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">AURAV</span>
+              {profile?.username?.toUpperCase() || 'HARIS'} <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent italic">AURAV</span>
             </h2>
             <p className="text-lg md:text-2xl text-white/40 max-w-xl font-medium px-4 lg:px-0">Turning creative energy into measurable community impact. <span className="text-brand-blue">#AuraLegend</span></p>
           </div>
@@ -72,7 +77,7 @@ export const ProfilePreview = () => {
 
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 md:gap-12 pt-12 border-t border-white/5 mx-4 lg:mx-0">
              <ImpactStat label="Carbon Offset" value="4.2t" color="text-brand-blue" />
-             <ImpactStat label="Aura Points" value="12.4k" color="text-brand-purple" />
+             <ImpactStat label="Aura Points" value={profile?.aura_points?.toLocaleString() || '0'} color="text-brand-purple" />
              <ImpactStat label="Proofs" value="24" color="text-brand-pink" />
           </div>
         </div>
