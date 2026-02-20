@@ -18,6 +18,7 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewType>('home')
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
   const [isHostModalOpen, setIsHostModalOpen] = useState(false)
+  const [selectedMission, setSelectedMission] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,6 +43,11 @@ function App() {
       user: { id: 'demo-user', email: 'demo@auraverse.co' } 
     } as any
     setSession(mockSession)
+  }
+
+  const handleParticipate = (mission: any) => {
+    setSelectedMission(mission)
+    setIsProofModalOpen(true)
   }
 
   const renderView = () => {
@@ -69,7 +75,10 @@ function App() {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="pt-32"
           >
-            <Dashboard onHostMission={() => setIsHostModalOpen(true)} />
+            <Dashboard 
+              onHostMission={() => setIsHostModalOpen(true)} 
+              onParticipate={handleParticipate}
+            />
           </motion.div>
         )
       case 'missions':
@@ -82,7 +91,11 @@ function App() {
             transition={{ duration: 0.6, ease: 'backOut' }}
             className="pt-32"
           >
-             <Dashboard onHostMission={() => setIsHostModalOpen(true)} defaultTab="Events" />
+             <Dashboard 
+               onHostMission={() => setIsHostModalOpen(true)} 
+               onParticipate={handleParticipate}
+               defaultTab="Events" 
+             />
           </motion.div>
         )
       case 'community':
@@ -123,7 +136,11 @@ function App() {
         {renderView()}
       </AnimatePresence>
       
-      <ImpactProofModal isOpen={isProofModalOpen} onClose={() => setIsProofModalOpen(false)} />
+      <ImpactProofModal 
+        isOpen={isProofModalOpen} 
+        onClose={() => setIsProofModalOpen(false)} 
+        mission={selectedMission}
+      />
       <HostMissionModal isOpen={isHostModalOpen} onClose={() => setIsHostModalOpen(false)} />
 
       {/* Background Particles Layer */}

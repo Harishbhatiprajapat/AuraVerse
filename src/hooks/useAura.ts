@@ -98,7 +98,7 @@ export const useAura = () => {
     }
   }
 
-  const createMission = async (missionData: { title: string, description: string, reward_ap: number, mission_type: string }) => {
+  const createMission = async (missionData: { title: string, description: string, reward_ap: number, mission_type: string, image_url?: string }) => {
     const { data: { user } } = await supabase.auth.getUser()
     const userId = user?.id || 'demo-user'
 
@@ -137,5 +137,25 @@ export const useAura = () => {
     return { data, error }
   }
 
-  return { profile, missions, myMissions, loading, verifyImpact, createMission, updateProfile, refresh: fetchData }
+  const uploadEvidence = async (file: File) => {
+    if (isDemo) return { data: { publicUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09' } }
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random()}-${Date.now()}.${fileExt}`
+    const filePath = `proofs/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('evidence')
+      .upload(filePath, file)
+
+    if (uploadError) return { error: uploadError }
+
+    const { data } = supabase.storage
+      .from('evidence')
+      .getPublicUrl(filePath)
+
+    return { data: { publicUrl: data.publicUrl } }
+  }
+
+  return { profile, missions, myMissions, loading, verifyImpact, createMission, updateProfile, uploadEvidence, refresh: fetchData }
 }

@@ -3,7 +3,7 @@ import { Trophy, TrendingUp, Zap, Users, Leaf, Calendar, Plus, Map, List, Globe 
 import { useState, useEffect } from 'react'
 import { useAura } from '../hooks/useAura'
 
-export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMission: () => void, defaultTab?: string }) => {
+export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview' }: { onHostMission: () => void, onParticipate: (mission: any) => void, defaultTab?: string }) => {
   const [activeTab, setActiveTab] = useState(defaultTab)
   const { profile, missions, loading } = useAura()
 
@@ -19,6 +19,7 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
 
   return (
     <section className="px-6 py-24 md:px-24">
+      {/* ... header logic */}
       <div className="flex flex-col lg:flex-row items-center justify-between mb-16 gap-8">
         <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter break-words text-center lg:text-left">
           Dashboard <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent opacity-50 text-2xl md:text-4xl block md:inline">/ {activeTab}</span>
@@ -63,6 +64,7 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
                       reward={`${m.reward_ap} AP`} 
                       type={m.mission_type} 
                       tagColor={m.mission_type === 'Environmental' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'} 
+                      onClick={() => onParticipate(m)}
                     />
                   )) : (
                     <div className="p-12 text-center glass-card opacity-40">No missions found. Host one!</div>
@@ -70,6 +72,7 @@ export const Dashboard = ({ onHostMission, defaultTab = 'Overview' }: { onHostMi
                 </div>
               </div>
 
+              {/* ... leaderboard logic */}
               <div className="space-y-8">
                 <h3 className="text-3xl font-bold flex items-center gap-3 italic uppercase tracking-tight">
                   <Trophy className="w-8 h-8 text-yellow-400" /> Leaderboard
@@ -180,7 +183,7 @@ const StatCard = ({ icon, label, value, sub }: { icon: React.ReactNode, label: s
   </motion.div>
 )
 
-const MissionCard = ({ title, desc, reward, type, tagColor }: { title: string, desc: string, reward: string, type: string, tagColor: string }) => (
+const MissionCard = ({ title, desc, reward, type, tagColor, onClick }: { title: string, desc: string, reward: string, type: string, tagColor: string, onClick?: () => void }) => (
   <motion.div
     whileHover={{ x: 5, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
     className="glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 group cursor-pointer"
@@ -192,9 +195,17 @@ const MissionCard = ({ title, desc, reward, type, tagColor }: { title: string, d
       <h3 className="text-xl font-bold mb-2 group-hover:text-brand-blue transition-colors italic uppercase tracking-tight truncate">{title}</h3>
       <p className="text-white/50 text-sm line-clamp-2 sm:line-clamp-1">{desc}</p>
     </div>
-    <div className="text-left sm:text-right shrink-0">
-      <div className="text-brand-blue font-black text-xl mb-1">{reward}</div>
-      <div className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Potential Gain</div>
+    <div className="flex flex-col sm:items-end gap-4 shrink-0">
+      <div className="text-left sm:text-right">
+        <div className="text-brand-blue font-black text-xl mb-1">{reward}</div>
+        <div className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Potential Gain</div>
+      </div>
+      <button 
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        className="px-6 py-2 bg-brand-blue/10 border border-brand-blue/30 text-brand-blue rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-brand-navy transition-all"
+      >
+        Complete Mission
+      </button>
     </div>
   </motion.div>
 )

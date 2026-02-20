@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Rocket, Globe, Users, Trophy } from 'lucide-react'
+import { X, Plus, Rocket, Globe, Users, Trophy, Image as ImageIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useAura } from '../hooks/useAura'
 
@@ -8,6 +8,7 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
   const [title, setTitle] = useState('')
   const [reward, setReward] = useState('1000')
   const [description, setDescription] = useState('')
+  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80')
   const { createMission } = useAura()
 
   const handleHost = async () => {
@@ -17,7 +18,8 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
       title,
       description,
       reward_ap: parseInt(reward),
-      mission_type: missionType
+      mission_type: missionType,
+      image_url: imageUrl
     })
 
     if (!error) {
@@ -44,7 +46,7 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
             initial={{ scale: 0.9, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
-            className="relative w-full max-w-3xl glass-card p-12 border-brand-purple/30 shadow-[0_0_50px_rgba(146,0,255,0.2)]"
+            className="relative w-full max-w-4xl glass-card p-12 border-brand-purple/30 shadow-[0_0_50px_rgba(146,0,255,0.2)]"
           >
             <button 
               onClick={onClose}
@@ -86,15 +88,15 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Reward (AP ✨)</label>
-                  <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-4">
-                    <Trophy className="w-5 h-5 text-brand-purple" />
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Cover Image URL</label>
+                  <div className="relative group">
+                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                     <input 
-                      type="number" 
-                      value={reward}
-                      onChange={(e) => setReward(e.target.value)}
-                      placeholder="1000"
-                      className="bg-transparent focus:outline-none font-black text-xl w-full"
+                      type="text" 
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 focus:outline-none focus:border-brand-purple/50 transition-all font-medium text-sm"
                     />
                   </div>
                 </div>
@@ -104,7 +106,7 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Mission Brief</label>
                   <textarea 
-                    rows={6}
+                    rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe the impact goals and requirements..."
@@ -112,14 +114,24 @@ export const HostMissionModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                   />
                 </div>
 
-                <div className="p-6 rounded-3xl bg-brand-purple/10 border border-brand-purple/20">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Rocket className="w-5 h-5 text-brand-purple" />
-                    <span className="text-sm font-bold">Verification AI</span>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Reward (AP ✨)</label>
+                  <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-4">
+                    <Trophy className="w-5 h-5 text-brand-purple" />
+                    <input 
+                      type="number" 
+                      value={reward}
+                      onChange={(e) => setReward(e.target.value)}
+                      className="bg-transparent focus:outline-none font-black text-xl w-full"
+                    />
                   </div>
-                  <p className="text-[11px] text-white/50 leading-relaxed">
-                    Our AI models will automatically scan proof submissions for this mission to ensure authenticity.
-                  </p>
+                </div>
+
+                <div className="p-6 rounded-3xl bg-brand-purple/10 border border-brand-purple/20">
+                   <div className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-purple/60 mb-2">Image Preview</div>
+                   <div className="h-24 rounded-xl overflow-hidden">
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80')} />
+                   </div>
                 </div>
               </div>
             </div>

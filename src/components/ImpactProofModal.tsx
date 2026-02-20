@@ -1,29 +1,48 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Upload, ShieldCheck, MapPin, Camera, Sparkles, Loader2, CheckCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAura } from '../hooks/useAura'
 
-export const ImpactProofModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+export const ImpactProofModal = ({ isOpen, onClose, mission }: { isOpen: boolean, onClose: () => void, mission: any }) => {
   const [step, setStep] = useState<'upload' | 'scanning' | 'success'>('upload')
-  const { verifyImpact, missions } = useAura()
+  const { verifyImpact, uploadEvidence } = useAura()
   const [reward, setReward] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleUpload = async () => {
-    if (missions.length === 0) return
-    
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !mission) return
+
+    setIsUploading(true)
     setStep('scanning')
-    
-    // Use the first mission as a sample for the prototype
-    const sampleMission = missions[0]
-    const { data, error } = await verifyImpact(sampleMission.id, 'https://example.com/evidence.jpg')
-    
-    if (!error && data.status === 'verified') {
-      setReward(sampleMission.reward_ap)
-      setStep('success')
-    } else {
-      alert('Verification failed: ' + (error || 'AI could not verify impact'))
+
+    try {
+      // 1. Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await uploadEvidence(file)
+      if (uploadError) throw uploadError
+
+      // 2. Verify with AI Engine (Edge Function)
+      const { data: verifyData, error: verifyError } = await verifyImpact(mission.id, uploadData.publicUrl)
+      if (verifyError) throw verifyError
+
+      if (verifyData.status === 'verified') {
+        setReward(mission.reward_ap)
+        setStep('success')
+      } else {
+        alert('AI Verification failed. Please try again.')
+        setStep('upload')
+      }
+    } catch (err: any) {
+      alert('Error: ' + (err.message || 'Could not complete verification'))
       setStep('upload')
+    } finally {
+      setIsUploading(false)
     }
+  }
+
+  const triggerFilePicker = () => {
+    fileInputRef.current?.click()
   }
 
   return (
@@ -44,7 +63,14 @@ export const ImpactProofModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="relative w-full max-w-4xl glass-million p-12 md:p-16 border-brand-blue/30 overflow-hidden shadow-[0_0_100px_rgba(0,210,255,0.2)]"
           >
-            {/* Animated Laser Scan Effect */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              className="hidden" 
+              accept="image/*"
+            />
+
             {step === 'scanning' && (
               <motion.div 
                 initial={{ top: '0%' }}
@@ -89,14 +115,16 @@ export const ImpactProofModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                       </div>
                       <div className="p-8 glass-million bg-white/5 border-white/5 space-y-4">
                          <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">Active Mission</div>
-                         <div className="text-xl font-black italic uppercase tracking-tight text-brand-blue">Plastic Free Week Challenge</div>
+                         <div className="text-xl font-black italic uppercase tracking-tight text-brand-blue truncate">
+                           {mission?.title || 'No Mission Selected'}
+                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-6">
                       <label className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">2. Authenticate Evidence</label>
                       <div 
-                        onClick={handleUpload}
+                        onClick={triggerFilePicker}
                         className="border-2 border-dashed border-white/10 rounded-[2rem] p-16 text-center hover:border-brand-blue/50 hover:bg-brand-blue/5 transition-all cursor-pointer group"
                       >
                         <Upload className="w-16 h-16 mx-auto mb-6 text-white/10 group-hover:text-brand-blue group-hover:scale-110 transition-all" />
@@ -145,7 +173,7 @@ export const ImpactProofModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
                   </div>
                   <button 
                     onClick={() => { onClose(); setStep('upload'); }}
-                    className="px-12 py-5 bg-brand-cyan text-brand-navy font-black text-xl rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,255,255,0.4)] uppercase italic"
+                    className="px-12 py-5 bg-brand-cyan text-brand-navy font-black text-xl rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,210,255,0.4)] uppercase italic"
                   >
                     Return to Mission Hub
                   </button>
