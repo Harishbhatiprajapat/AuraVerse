@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Upload, ShieldCheck, MapPin, Camera, Sparkles, Loader2, CheckCircle, ChevronDown } from 'lucide-react'
+import { X, Upload, ShieldCheck, Sparkles, Loader2, CheckCircle } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useAura } from '../hooks/useAura'
 
@@ -80,12 +80,12 @@ export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission }: {
             <AnimatePresence mode="wait">
               {step === 'upload' && (
                 <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-brand-blue/20 rounded-2xl flex items-center justify-center border border-brand-blue/30 shadow-lg">
+                  <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                    <div className="w-16 h-16 bg-brand-blue/20 rounded-2xl flex items-center justify-center border border-brand-blue/30 shadow-lg shrink-0">
                       <ShieldCheck className="w-9 h-9 text-brand-blue" />
                     </div>
-                    <div>
-                      <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Impact Proof</h2>
+                    <div className="min-w-0">
+                      <h2 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter truncate">Impact Proof</h2>
                       <p className="text-brand-blue font-black uppercase tracking-[0.4em] text-[10px]">Secure Verification Node v4.0</p>
                     </div>
                   </div>
@@ -173,10 +173,3 @@ export const ImpactProofModal = ({ isOpen, onClose, mission: initialMission }: {
     </AnimatePresence>
   )
 }
-
-const SourceButton = ({ icon, label, active = false }: any) => (
-  <button className={`flex flex-col items-center gap-3 p-8 rounded-[1.5rem] border transition-all ${active ? 'bg-brand-blue/10 border-brand-blue/50 text-brand-blue shadow-[0_0_30px_rgba(0,210,255,0.2)]' : 'bg-white/5 border-white/5 text-white/30 hover:text-white hover:border-white/20'}`}>
-    {icon}
-    <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
-  </button>
-)
