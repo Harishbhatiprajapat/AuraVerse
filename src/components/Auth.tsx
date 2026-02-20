@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { Zap, Mail, Lock, User, ArrowRight, Github, AlertTriangle } from 'lucide-react'
+import { Zap, Mail, Lock, User, ArrowRight, Github } from 'lucide-react'
 
 export const Auth = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
   const [isLogin, setIsLogin] = useState(true)
