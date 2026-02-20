@@ -26,9 +26,23 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isDemo, setIsDemo] = useState(false)
 
   const fetchData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    // 1. Fetch Leaderboard
+    // 1. Fetch Missions (Public)
+    try {
+      const { data: mData } = await supabase
+        .from('missions')
+        .select('*, profiles:user_id (username)')
+        .order('created_at', { ascending: false })
+      
+      const formatted = (mData || []).map(m => ({
+        ...m,
+        username: (m.profiles as any)?.username || 'Guardian'
+      }))
+      setMissions(formatted)
+    } catch (e) {
+      console.error('Missions Fetch Error:', e)
+    }
+
+    // 2. Fetch Leaderboard
     const { data: lData } = await supabase
       .from('profiles')
       .select('username, aura_points, avatar_url, level')
@@ -36,6 +50,8 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .limit(10)
     setLeaderboard(lData || [])
 
+    const { data: { user } } = await supabase.auth.getUser()
+    
     if (localStorage.getItem('aura_demo_mode') === 'true' && !user) {
       setIsDemo(true)
       setProfile({ id: 'demo', username: 'DemoLegend', aura_points: 25000, level: 50, avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo', impact_type: 'Legendary' })
@@ -46,25 +62,12 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) { setLoading(false); return; }
 
     try {
-      // 2. Fetch Missions with Host Attribution
-      const { data: mData } = await supabase
-        .from('missions')
-        .select('*, profiles:user_id (username)')
-        .order('created_at', { ascending: false })
-      
-      const formatted = (mData || []).map(m => ({
-        ...m,
-        username: (m.profiles as any)?.username || 'Guardian'
-      }))
-
-      setMissions(formatted)
-      setMyMissions(formatted.filter(m => m.user_id === user.id))
-
-      // 3. Fetch My Profile
+      // 3. Fetch My Profile & Filter My Missions
+      setMyMissions(missions.filter(m => m.user_id === user.id))
       const { data: pData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-      setProfile(pData)
+      if (pData) setProfile(pData)
     } catch (e) {
-      console.error('Fetch Error:', e)
+      console.error('Profile Fetch Error:', e)
     } finally {
       setLoading(false)
     }

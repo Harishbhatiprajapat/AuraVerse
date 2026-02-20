@@ -5,11 +5,19 @@ import { useAura } from '../context/AuraContext'
 
 export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview' }: { onHostMission: () => void, onParticipate: (mission: any) => void, defaultTab?: string }) => {
   const [activeTab, setActiveTab] = useState(defaultTab)
-  const { profile, missions, leaderboard, loading } = useAura()
+  const { profile, missions, leaderboard, loading, refresh } = useAura()
 
   useEffect(() => {
     setActiveTab(defaultTab)
+    // Force a re-fetch when the tab changes to Missions/Events to ensure sync
+    if (defaultTab === 'Events') refresh()
   }, [defaultTab])
+
+  // Periodic mission sync
+  useEffect(() => {
+    const timer = setInterval(() => refresh(), 30000)
+    return () => clearInterval(timer)
+  }, [])
 
   if (loading) return (
     <div className="h-64 flex items-center justify-center">
@@ -25,9 +33,9 @@ export const Dashboard = ({ onHostMission, onParticipate, defaultTab = 'Overview
         </h2>
         
         <div className="flex items-center gap-2 md:gap-4 bg-white/5 p-2 rounded-2xl border border-white/5 backdrop-blur-xl relative">
-          <TabButton active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} icon={<List className="w-5 h-5" />} label="Overview" />
-          <TabButton active={activeTab === 'Events'} onClick={() => setActiveTab('Events')} icon={<Calendar className="w-5 h-5" />} label="Events" />
-          <TabButton active={activeTab === 'Global'} onClick={() => setActiveTab('Global')} icon={<Map className="w-5 h-5" />} label="Impact" />
+          <TabButton active={activeTab === 'Overview'} onClick={() => { setActiveTab('Overview'); refresh(); }} icon={<List className="w-5 h-5" />} label="Overview" />
+          <TabButton active={activeTab === 'Events'} onClick={() => { setActiveTab('Events'); refresh(); }} icon={<Calendar className="w-5 h-5" />} label="Events" />
+          <TabButton active={activeTab === 'Global'} onClick={() => { setActiveTab('Global'); refresh(); }} icon={<Map className="w-5 h-5" />} label="Impact" />
         </div>
       </div>
 
